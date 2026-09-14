@@ -1,0 +1,6 @@
+{
+  "name": "Income Allocator",
+  "description": "Simple mobile-first personal money allocation and category management for irregular income.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
