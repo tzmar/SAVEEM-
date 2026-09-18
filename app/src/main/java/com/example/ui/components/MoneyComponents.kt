@@ -33,12 +33,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -88,18 +91,32 @@ fun AllocationSuccessDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color(0xF20B1A22),
+        modifier = Modifier
+            .border(
+                1.2.dp,
+                Brush.verticalGradient(
+                    listOf(Color(0x80FFFFFF), Color(0x3010B981), Color(0x15FFFFFF))
+                ),
+                RoundedCornerShape(24.dp)
+            )
+            .shadow(20.dp, RoundedCornerShape(24.dp), ambientColor = Color(0x8010B981)),
         confirmButton = {
             Button(
                 onClick = onDismiss,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("allocation_done_button"),
-                shape = RoundedCornerShape(12.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = LiquidEmerald
+                ),
+                shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
                     text = "Done",
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
         },
@@ -111,13 +128,14 @@ fun AllocationSuccessDialog(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = LiquidMint,
                     modifier = Modifier.size(28.dp)
                 )
                 Text(
                     text = "Money Allocated!",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
+                    fontSize = 20.sp,
+                    color = Color(0xFFF8FAFC)
                 )
             }
         },
@@ -126,34 +144,46 @@ fun AllocationSuccessDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                // Glass total card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0x3810B981), Color(0x150D9488))
+                            )
+                        )
+                        .border(
+                            1.dp,
+                            Brush.verticalGradient(
+                                listOf(Color(0x8034D399), Color(0x2034D399))
+                            ),
+                            RoundedCornerShape(16.dp)
+                        )
+                        .padding(16.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column {
                         Text(
                             text = "TOTAL RECEIVED",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            color = LiquidMint
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = formatCurrency(event.allocation.totalAmount, event.currency),
-                            fontSize = 28.sp,
+                            fontSize = 30.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = Color(0xFFF8FAFC)
                         )
                         if (event.allocation.note.isNotBlank()) {
                             Text(
                                 text = "Note: ${event.allocation.note}",
                                 fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                                color = Color(0xFF94A3B8),
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
@@ -164,7 +194,7 @@ fun AllocationSuccessDialog(
                     text = "Divided Into Preset Categories:",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color(0xFF94A3B8)
                 )
 
                 Column(
@@ -175,11 +205,14 @@ fun AllocationSuccessDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    RoundedCornerShape(8.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0x25FFFFFF))
+                                .border(
+                                    1.dp,
+                                    Color(0x33FFFFFF),
+                                    RoundedCornerShape(10.dp)
                                 )
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -187,26 +220,27 @@ fun AllocationSuccessDialog(
                                 Text(
                                     text = split.categoryName,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
+                                    fontSize = 14.sp,
+                                    color = Color(0xFFF8FAFC)
                                 )
                                 Text(
                                     text = "${split.percentage.toInt()}% allocation",
                                     fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = Color(0xFF94A3B8)
                                 )
                             }
                             Text(
                                 text = formatCurrency(split.amount, event.currency),
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.primary
+                                color = LiquidMint
                             )
                         }
                     }
                 }
             }
         },
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(24.dp)
     )
 }
 
@@ -225,17 +259,27 @@ fun RecordExpenseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color(0xF20B1A22),
+        modifier = Modifier
+            .border(
+                1.2.dp,
+                Brush.verticalGradient(
+                    listOf(Color(0x80FFFFFF), categoryColor.copy(alpha = 0.35f), Color(0x15FFFFFF))
+                ),
+                RoundedCornerShape(24.dp)
+            ),
         confirmButton = {
             Button(
                 onClick = onConfirm,
                 enabled = (amount.toDoubleOrNull() ?: 0.0) > 0.0,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                colors = ButtonDefaults.buttonColors(containerColor = LiquidRose),
                 modifier = Modifier.testTag("confirm_expense_button"),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     text = "Record Expense",
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
         },
@@ -244,7 +288,7 @@ fun RecordExpenseDialog(
                 onClick = onDismiss,
                 modifier = Modifier.testTag("cancel_expense_button")
             ) {
-                Text("Cancel")
+                Text("Cancel", color = Color(0xFF94A3B8))
             }
         },
         title = {
@@ -261,7 +305,8 @@ fun RecordExpenseDialog(
                 Text(
                     text = "Spend from ${category.name}",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = Color(0xFFF8FAFC)
                 )
             }
         },
@@ -274,23 +319,23 @@ fun RecordExpenseDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(
-                            MaterialTheme.colorScheme.surfaceVariant,
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(10.dp),
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0x20FFFFFF))
+                        .border(1.dp, Color(0x30FFFFFF), RoundedCornerShape(12.dp))
+                        .padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "Current Available Balance:",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF94A3B8)
                     )
                     Text(
                         text = formatCurrency(category.currentBalance, currency),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
+                        fontSize = 15.sp,
+                        color = Color(0xFFF8FAFC)
                     )
                 }
 
@@ -299,12 +344,17 @@ fun RecordExpenseDialog(
                     onValueChange = onAmountChange,
                     label = { Text("Amount Spent ($currency)") },
                     placeholder = { Text("e.g. 250") },
-                    prefix = { Text(currency, fontWeight = FontWeight.Bold) },
+                    prefix = { Text(currency, fontWeight = FontWeight.Bold, color = LiquidMint) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("expense_amount_input")
+                        .testTag("expense_amount_input"),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = LiquidMint,
+                        unfocusedBorderColor = Color(0x33FFFFFF)
+                    )
                 )
 
                 OutlinedTextField(
@@ -315,11 +365,16 @@ fun RecordExpenseDialog(
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("expense_desc_input")
+                        .testTag("expense_desc_input"),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = LiquidMint,
+                        unfocusedBorderColor = Color(0x33FFFFFF)
+                    )
                 )
             }
         },
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(24.dp)
     )
 }
 
@@ -338,19 +393,29 @@ fun AddGoalDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color(0xF20B1A22),
+        modifier = Modifier
+            .border(
+                1.2.dp,
+                Brush.verticalGradient(
+                    listOf(Color(0x80FFFFFF), Color(0x3038BDF8), Color(0x15FFFFFF))
+                ),
+                RoundedCornerShape(24.dp)
+            ),
         confirmButton = {
             Button(
                 onClick = onConfirm,
                 enabled = title.isNotBlank() && (target.toDoubleOrNull() ?: 0.0) > 0.0,
                 modifier = Modifier.testTag("save_goal_button"),
-                shape = RoundedCornerShape(10.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = LiquidCyan),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Create Goal", fontWeight = FontWeight.Bold)
+                Text("Create Goal", fontWeight = FontWeight.Bold, color = Color.White)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", color = Color(0xFF94A3B8))
             }
         },
         title = {
@@ -361,12 +426,13 @@ fun AddGoalDialog(
                 Icon(
                     imageVector = Icons.Default.Flag,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = LiquidCyan
                 )
                 Text(
                     text = "Create Financial Goal",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = Color(0xFFF8FAFC)
                 )
             }
         },
@@ -383,7 +449,12 @@ fun AddGoalDialog(
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("goal_title_input")
+                        .testTag("goal_title_input"),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = LiquidCyan,
+                        unfocusedBorderColor = Color(0x33FFFFFF)
+                    )
                 )
 
                 OutlinedTextField(
@@ -391,39 +462,46 @@ fun AddGoalDialog(
                     onValueChange = onTargetChange,
                     label = { Text("Target Amount ($currency)") },
                     placeholder = { Text("e.g. 10000") },
-                    prefix = { Text(currency, fontWeight = FontWeight.Bold) },
+                    prefix = { Text(currency, fontWeight = FontWeight.Bold, color = LiquidCyan) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("goal_target_input")
+                        .testTag("goal_target_input"),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = LiquidCyan,
+                        unfocusedBorderColor = Color(0x33FFFFFF)
+                    )
                 )
 
                 Text(
                     text = "Link to Category (tracks accumulated balance):",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color(0xFF94A3B8)
                 )
 
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     categories.forEach { cat ->
                         val isSelected = selectedCategoryId == cat.id
+                        val catColor = parseColorSafe(cat.colorHex)
                         OutlinedButton(
                             onClick = { onCategorySelect(cat.id) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                                containerColor = if (isSelected) catColor.copy(alpha = 0.22f) else Color(0x18FFFFFF)
                             ),
                             border = ButtonDefaults.outlinedButtonBorder.copy(
-                                brush = androidx.compose.ui.graphics.SolidColor(
-                                    if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                brush = Brush.horizontalGradient(
+                                    if (isSelected) listOf(catColor, catColor.copy(alpha = 0.5f))
+                                    else listOf(Color(0x33FFFFFF), Color(0x15FFFFFF))
                                 )
                             ),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -433,12 +511,12 @@ fun AddGoalDialog(
                                 Text(
                                     text = cat.name,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    color = if (isSelected) Color(0xFFF8FAFC) else Color(0xFFE2E8F0)
                                 )
                                 Text(
                                     text = "${cat.percentage.toInt()}%",
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (isSelected) catColor else Color(0xFF94A3B8)
                                 )
                             }
                         }
@@ -446,6 +524,6 @@ fun AddGoalDialog(
                 }
             }
         },
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(24.dp)
     )
 }

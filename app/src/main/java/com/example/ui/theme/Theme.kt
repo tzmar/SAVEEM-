@@ -1,66 +1,75 @@
 package com.example.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = TealPrimaryDark,
-    onPrimary = TealOnPrimaryDark,
-    primaryContainer = TealContainerDark,
-    onPrimaryContainer = TealOnContainerDark,
-    secondary = Color(0xFF38BDF8),
-    onSecondary = Color(0xFF003548),
-    background = BackgroundDark,
-    surface = SurfaceDark,
-    surfaceVariant = SurfaceVariantDark,
-    onBackground = TextPrimaryDark,
-    onSurface = TextPrimaryDark,
-    onSurfaceVariant = TextSecondaryDark,
-    outline = OutlineDark
+val LocalIsDarkTheme = staticCompositionLocalOf { true }
+
+private val LiquidDarkColorScheme = darkColorScheme(
+    primary = LiquidTealPrimary,
+    onPrimary = LiquidTealOnPrimary,
+    primaryContainer = LiquidTealContainer,
+    onPrimaryContainer = LiquidTealOnContainer,
+    secondary = LiquidCyanAccent,
+    onSecondary = Color(0xFF00222D),
+    secondaryContainer = Color(0xFF0C3540),
+    onSecondaryContainer = Color(0xFFBAE6FD),
+    tertiary = LiquidIndigoAccent,
+    background = LiquidBackground,
+    surface = LiquidSurface,
+    surfaceVariant = LiquidSurfaceVariant,
+    onBackground = LiquidTextPrimary,
+    onSurface = LiquidTextPrimary,
+    onSurfaceVariant = LiquidTextSecondary,
+    outline = LiquidOutline,
+    error = LiquidRoseAccent
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = TealPrimaryLight,
-    onPrimary = TealOnPrimaryLight,
-    primaryContainer = TealContainerLight,
-    onPrimaryContainer = TealOnContainerLight,
+private val LiquidLightColorScheme = lightColorScheme(
+    primary = Color(0xFF0D9488),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFCCFBF1),
+    onPrimaryContainer = Color(0xFF115E59),
     secondary = Color(0xFF0284C7),
-    onSecondary = Color(0xFFFFFFFF),
-    background = BackgroundLight,
-    surface = SurfaceLight,
-    surfaceVariant = SurfaceVariantLight,
-    onBackground = TextPrimaryLight,
-    onSurface = TextPrimaryLight,
-    onSurfaceVariant = TextSecondaryLight,
-    outline = OutlineLight
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE0F2FE),
+    onSecondaryContainer = Color(0xFF075985),
+    tertiary = Color(0xFF4F46E5),
+    background = LiquidLightBackground,
+    surface = LiquidLightSurface,
+    surfaceVariant = LiquidLightSurfaceVariant,
+    onBackground = LiquidLightTextPrimary,
+    onSurface = LiquidLightTextPrimary,
+    onSurfaceVariant = LiquidLightTextSecondary,
+    outline = LiquidLightOutline,
+    error = Color(0xFFE11D48)
 )
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // Use our intentional emerald palette by default
+    themeMode: AppThemeMode = AppThemeMode.LIQUID_DARK,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    val systemDark = isSystemInDarkTheme()
+    val isDark = when (themeMode) {
+        AppThemeMode.LIQUID_DARK -> true
+        AppThemeMode.LIQUID_LIGHT -> false
+        AppThemeMode.SYSTEM -> systemDark
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val colorScheme = if (isDark) LiquidDarkColorScheme else LiquidLightColorScheme
+
+    CompositionLocalProvider(LocalIsDarkTheme provides isDark) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

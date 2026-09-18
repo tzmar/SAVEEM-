@@ -15,6 +15,8 @@ import com.example.data.model.GoalProgress
 import com.example.data.model.OverallStats
 import com.example.data.model.SplitPreview
 import com.example.data.repository.MoneyRepository
+import com.example.ui.theme.AppThemeMode
+import com.example.util.GoalNotificationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,9 +34,42 @@ data class AllocationSuccessEvent(
 
 class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
 
+    // App Theme State
+    private val _themeMode = MutableStateFlow(AppThemeMode.LIQUID_DARK)
+    val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
+
+    fun setThemeMode(mode: AppThemeMode) {
+        _themeMode.value = mode
+    }
+
+    // Set of notified goal milestone keys formatted as "${goalId}_${milestonePercent}"
+    private val notifiedMilestones = mutableSetOf<String>()
+
     init {
         viewModelScope.launch {
             repository.ensureDefaultDataLoaded()
+        }
+    }
+
+    fun checkAndTriggerGoalMilestones(context: Context, goals: List<GoalProgress>, currency: String) {
+        val milestones = listOf(50, 75, 100)
+        for (goal in goals) {
+            val progressPercent = (goal.percentageComplete * 100).toInt()
+            for (milestone in milestones) {
+                val key = "${goal.id}_$milestone"
+                if (progressPercent >= milestone && !notifiedMilestones.contains(key)) {
+                    notifiedMilestones.add(key)
+                    GoalNotificationHelper.showMilestoneNotification(
+                        context = context,
+                        goalId = goal.id,
+                        goalTitle = goal.title,
+                        milestonePercent = milestone,
+                        currentAmount = goal.currentAmount,
+                        targetAmount = goal.targetAmount,
+                        currencySymbol = currency
+                    )
+                }
+            }
         }
     }
 

@@ -31,21 +31,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,6 +48,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
@@ -68,6 +64,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.AllocationSuccessDialog
+import com.example.ui.components.LiquidCyan
+import com.example.ui.components.LiquidEmerald
+import com.example.ui.components.LiquidGlassButton
+import com.example.ui.components.LiquidGlassCard
+import com.example.ui.components.LiquidGlassPill
+import com.example.ui.components.LiquidMint
+import com.example.ui.components.LiquidTeal
 import com.example.ui.components.formatCurrency
 import com.example.ui.components.parseColorSafe
 import com.example.ui.viewmodel.MoneyViewModel
@@ -114,86 +117,98 @@ fun AllocateScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = "INCOME ALLOCATOR",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(LiquidMint)
+                    )
+                    Text(
+                        text = "LIQUID ALLOCATOR",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp,
+                        color = LiquidMint
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Split Every Dollar Intentionally",
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color(0xFF94A3B8)
                 )
             }
 
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.padding(2.dp)
-            ) {
-                Text(
-                    text = "Currency: $currency",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                )
-            }
+            LiquidGlassPill(
+                text = "Currency: $currency",
+                color = LiquidCyan
+            )
         }
 
         // Core Hero Card: "How much did you receive?"
-        Card(
+        LiquidGlassCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            shape = RoundedCornerShape(26.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(22.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "How much did you receive?",
-                    fontSize = 20.sp,
+                    fontSize = 21.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = Color(0xFFF8FAFC),
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Large Amount Input Box
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = 1.5.dp,
-                        color = if (isReadyToAllocate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                    ),
+                // Frosted Liquid Glass Amount Input Container
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color(0x35000000),
+                                    Color(0x20000000)
+                                )
+                            )
+                        )
+                        .border(
+                            width = 1.5.dp,
+                            brush = Brush.verticalGradient(
+                                if (isReadyToAllocate) {
+                                    listOf(LiquidMint, LiquidCyan.copy(alpha = 0.5f), Color(0x33FFFFFF))
+                                } else {
+                                    listOf(Color(0x4DFFFFFF), Color(0x1AFFFFFF))
+                                }
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .padding(horizontal = 18.dp, vertical = 14.dp)
                         .testTag("amount_input_container")
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 18.dp, vertical = 16.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
                             text = currency,
-                            fontSize = 36.sp,
+                            fontSize = 38.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = LiquidMint
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
 
                         Box(
                             modifier = Modifier.weight(1f),
@@ -202,18 +217,18 @@ fun AllocateScreen(
                             if (amountInput.isEmpty()) {
                                 Text(
                                     text = "0",
-                                    fontSize = 40.sp,
+                                    fontSize = 42.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                    color = Color(0x4D94A3B8)
                                 )
                             }
                             BasicTextField(
                                 value = amountInput,
                                 onValueChange = viewModel::onAmountChanged,
                                 textStyle = TextStyle(
-                                    fontSize = 40.sp,
+                                    fontSize = 42.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = Color(0xFFF8FAFC)
                                 ),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(
@@ -221,7 +236,7 @@ fun AllocateScreen(
                                     imeAction = ImeAction.Done
                                 ),
                                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                cursorBrush = SolidColor(LiquidMint),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("amount_input_field")
@@ -236,24 +251,24 @@ fun AllocateScreen(
                                 Icon(
                                     imageVector = Icons.Default.Clear,
                                     contentDescription = "Clear amount",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = Color(0xFF94A3B8)
                                 )
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // Small-income friendly quick-tap presets
                 Text(
                     text = "Quick amounts:",
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFF94A3B8),
                     modifier = Modifier.align(Alignment.Start)
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
@@ -263,36 +278,53 @@ fun AllocateScreen(
                     val presets = listOf(20.0, 50.0, 100.0, 500.0, 1000.0, 3000.0)
                     presets.forEach { preset ->
                         val isSelected = numericAmount == preset
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                        Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(
+                                    if (isSelected) {
+                                        Brush.horizontalGradient(
+                                            listOf(Color(0xFF0D9488), Color(0xFF10B981))
+                                        )
+                                    } else {
+                                        Brush.verticalGradient(
+                                            listOf(Color(0x2EFFFFFF), Color(0x14FFFFFF))
+                                        )
+                                    }
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    brush = Brush.verticalGradient(
+                                        if (isSelected) listOf(Color(0xCCFFFFFF), Color(0x66FFFFFF))
+                                        else listOf(Color(0x33FFFFFF), Color(0x14FFFFFF))
+                                    ),
+                                    shape = RoundedCornerShape(14.dp)
+                                )
                                 .clickable {
                                     viewModel.onQuickAmountSelected(preset)
                                     focusManager.clearFocus()
                                 }
+                                .padding(horizontal = 14.dp, vertical = 9.dp)
                                 .testTag("quick_amount_${preset.toInt()}")
                         ) {
                             Text(
                                 text = "$currency${preset.toInt()}",
                                 fontSize = 13.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                color = if (isSelected) Color.White else Color(0xFFE2E8F0)
                             )
                         }
                     }
                 }
 
                 // Optional note toggle
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
                 if (!showNoteField && noteInput.isEmpty()) {
                     Text(
                         text = "+ Add optional note (e.g. Freelance project)",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = LiquidCyan,
                         modifier = Modifier
                             .clickable { showNoteField = true }
                             .padding(vertical = 4.dp)
@@ -307,15 +339,18 @@ fun AllocateScreen(
                     OutlinedTextField(
                         value = noteInput,
                         onValueChange = viewModel::onNoteChanged,
-                        placeholder = { Text("Income source / note (optional)", fontSize = 13.sp) },
+                        placeholder = { Text("Income source / note (optional)", fontSize = 13.sp, color = Color(0xFF64748B)) },
                         singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp)
                             .testTag("income_note_input"),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                            focusedBorderColor = LiquidCyan,
+                            unfocusedBorderColor = Color(0x33FFFFFF),
+                            focusedTextColor = Color(0xFFF8FAFC),
+                            unfocusedTextColor = Color(0xFFF8FAFC)
                         )
                     )
                 }
@@ -323,19 +358,15 @@ fun AllocateScreen(
         }
 
         // Live Preset Allocation Split Breakdown
-        Card(
+        LiquidGlassCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            shape = RoundedCornerShape(24.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -344,34 +375,34 @@ fun AllocateScreen(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PieChart,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(LiquidTeal.copy(alpha = 0.25f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PieChart,
+                                contentDescription = null,
+                                tint = LiquidMint,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                         Text(
                             text = "Automatic Category Split",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = Color(0xFFF8FAFC)
                         )
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                    ) {
-                        Text(
-                            text = "100% Total",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
+                    LiquidGlassPill(
+                        text = "100% Total",
+                        color = LiquidMint
+                    )
                 }
 
                 Text(
@@ -381,7 +412,7 @@ fun AllocateScreen(
                         "Your preset percentage allocation rules:"
                     },
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color(0xFF94A3B8)
                 )
 
                 // List of split rows
@@ -418,7 +449,7 @@ fun AllocateScreen(
         }
 
         // Primary Action: "Allocate Money"
-        Button(
+        LiquidGlassButton(
             onClick = {
                 focusManager.clearFocus()
                 viewModel.allocateMoney()
@@ -426,33 +457,26 @@ fun AllocateScreen(
             enabled = isReadyToAllocate,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(58.dp)
+                .height(60.dp)
                 .testTag("allocate_money_button"),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
+            gradientColors = listOf(Color(0xFF0EA5E9), Color(0xFF10B981), Color(0xFF34D399))
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AccountBalanceWallet,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Text(
-                    text = if (isReadyToAllocate) "Allocate $currency$amountInput Now" else "Allocate Money",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.AccountBalanceWallet,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = if (isReadyToAllocate) "Allocate $currency$amountInput Now" else "Allocate Money",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -464,53 +488,72 @@ fun CategorySplitRow(
     color: Color,
     isHighlighted: Boolean
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
             .background(
-                if (isHighlighted) color.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                RoundedCornerShape(12.dp)
+                if (isHighlighted) {
+                    Brush.horizontalGradient(
+                        listOf(color.copy(alpha = 0.20f), color.copy(alpha = 0.05f))
+                    )
+                } else {
+                    Brush.verticalGradient(
+                        listOf(Color(0x22FFFFFF), Color(0x0EFFFFFF))
+                    )
+                }
             )
             .border(
                 width = 1.dp,
-                color = if (isHighlighted) color.copy(alpha = 0.3f) else Color.Transparent,
-                shape = RoundedCornerShape(12.dp)
+                brush = Brush.verticalGradient(
+                    if (isHighlighted) {
+                        listOf(color.copy(alpha = 0.6f), color.copy(alpha = 0.15f))
+                    } else {
+                        listOf(Color(0x2BFFFFFF), Color(0x10FFFFFF))
+                    }
+                ),
+                shape = RoundedCornerShape(16.dp)
             )
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(horizontal = 16.dp, vertical = 13.dp)
     ) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.weight(1f)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(color)
-            )
-            Column {
-                Text(
-                    text = name,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                        .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape)
                 )
-                Text(
-                    text = "${percentage.toInt()}% of income",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column {
+                    Text(
+                        text = name,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFF8FAFC)
+                    )
+                    Text(
+                        text = "${percentage.toInt()}% of income",
+                        fontSize = 11.sp,
+                        color = Color(0xFF94A3B8)
+                    )
+                }
             }
-        }
 
-        Text(
-            text = amountText,
-            fontSize = if (isHighlighted) 17.sp else 13.sp,
-            fontWeight = if (isHighlighted) FontWeight.ExtraBold else FontWeight.SemiBold,
-            color = if (isHighlighted) color else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+            Text(
+                text = amountText,
+                fontSize = if (isHighlighted) 17.sp else 13.sp,
+                fontWeight = if (isHighlighted) FontWeight.ExtraBold else FontWeight.SemiBold,
+                color = if (isHighlighted) color else Color(0xFF94A3B8)
+            )
+        }
     }
 }
