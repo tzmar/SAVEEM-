@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,10 +17,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.CurrencyExchange
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.CurrencyExchange
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Settings
@@ -36,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,6 +48,7 @@ import com.example.ui.components.FloatingLiquidGlassNavBar
 import com.example.ui.components.LiquidGlassBackground
 import com.example.ui.screens.AllocateScreen
 import com.example.ui.screens.DashboardScreen
+import com.example.ui.screens.ForexScreen
 import com.example.ui.screens.HistoryScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.MyApplicationTheme
@@ -53,20 +56,21 @@ import com.example.ui.viewmodel.MoneyViewModel
 import com.example.ui.viewmodel.MoneyViewModelFactory
 import com.example.util.GoalNotificationHelper
 
+@Composable
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+    Text(text = "Hello $name!", modifier = modifier)
+}
+
 enum class AppTab(
     val label: String,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 ) {
-    ALLOCATE("Allocate", Icons.Filled.AccountBalanceWallet, Icons.Outlined.AccountBalanceWallet),
     DASHBOARD("Dashboard", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
+    ALLOCATE("Allocate", Icons.Filled.AccountBalanceWallet, Icons.Outlined.AccountBalanceWallet),
+    FOREX("Forex", Icons.Filled.CurrencyExchange, Icons.Outlined.CurrencyExchange),
     HISTORY("History", Icons.Filled.History, Icons.Outlined.History),
     SETTINGS("Settings", Icons.Filled.Settings, Icons.Outlined.Settings)
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(text = "Hello $name!", modifier = modifier)
 }
 
 class MainActivity : ComponentActivity() {
@@ -76,9 +80,8 @@ class MainActivity : ComponentActivity() {
         GoalNotificationHelper.createNotificationChannel(applicationContext)
         enableEdgeToEdge()
         setContent {
-            val context = LocalContext.current
-            val coroutineScope = rememberCoroutineScope()
-            val database = remember { AppDatabase.getDatabase(context, coroutineScope) }
+            val context = LocalContext.current.applicationContext
+            val database = remember { AppDatabase.getDatabase(context) }
             val repository = remember { MoneyRepository(database) }
             val viewModel: MoneyViewModel = viewModel(factory = MoneyViewModelFactory(repository))
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
@@ -93,14 +96,17 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MoneyApp(viewModel: MoneyViewModel) {
     val context = LocalContext.current
-    var currentTab by remember { mutableStateOf(AppTab.ALLOCATE) }
+    var currentTab by remember { mutableStateOf(AppTab.DASHBOARD) }
+
+    // Intercept back button to return to Dashboard tab if on another screen
+    BackHandler(enabled = currentTab != AppTab.DASHBOARD) {
+        currentTab = AppTab.DASHBOARD
+    }
 
     // Request POST_NOTIFICATIONS permission on Android 13+ (API 33+)
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { _ ->
-        // Graceful handling; notifications will show if granted
-    }
+    ) { _ -> }
 
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -145,8 +151,19 @@ fun MoneyApp(viewModel: MoneyViewModel) {
                     .padding(innerPadding)
             ) {
                 when (currentTab) {
-                    AppTab.ALLOCATE -> AllocateScreen(viewModel = viewModel)
-                    AppTab.DASHBOARD -> DashboardScreen(viewModel = viewModel)
+                    AppTab.DASHBOARD -> DashboardScreen(
+                        viewModel = viewModel,
+                        onAddIncomeClick = { currentTab = AppTab.ALLOCATE },
+                        onOpenForexClick = { currentTab = AppTab.FOREX }
+                    )
+                    AppTab.ALLOCATE -> AllocateScreen(
+                        viewModel = viewModel,
+                        onOpenForexClick = { currentTab = AppTab.FOREX }
+                    )
+                    AppTab.FOREX -> ForexScreen(
+                        viewModel = viewModel,
+                        onNavigateToAllocate = { currentTab = AppTab.ALLOCATE }
+                    )
                     AppTab.HISTORY -> HistoryScreen(viewModel = viewModel)
                     AppTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
                 }

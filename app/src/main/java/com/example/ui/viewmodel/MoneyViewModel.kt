@@ -10,6 +10,7 @@ import com.example.data.model.AllocationSplitEntity
 import com.example.data.model.AllocationWithSplits
 import com.example.data.model.CategoryEntity
 import com.example.data.model.CategorySummary
+import com.example.data.model.CurrencyPair
 import com.example.data.model.ExpenseEntity
 import com.example.data.model.GoalProgress
 import com.example.data.model.OverallStats
@@ -374,6 +375,159 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
     fun deleteExpense(id: Long) {
         viewModelScope.launch {
             repository.deleteExpense(id)
+        }
+    }
+
+    // FOREX / CURRENCY CONVERTER
+    val availableCurrencyPairs = repository.defaultCurrencyPairs
+    private val _selectedPair = MutableStateFlow(availableCurrencyPairs[0])
+    val selectedPair: StateFlow<CurrencyPair> = _selectedPair.asStateFlow()
+
+    private val _forexRate = MutableStateFlow(14.0)
+    val forexRate: StateFlow<Double> = _forexRate.asStateFlow()
+
+    private val _forexRateInput = MutableStateFlow("14.00")
+    val forexRateInput: StateFlow<String> = _forexRateInput.asStateFlow()
+
+    private val _forexBaseAmountInput = MutableStateFlow("100")
+    val forexBaseAmountInput: StateFlow<String> = _forexBaseAmountInput.asStateFlow()
+
+    private val _isForexInverted = MutableStateFlow(false)
+    val isForexInverted: StateFlow<Boolean> = _isForexInverted.asStateFlow()
+
+    private val _forexFeedback = MutableStateFlow<String?>(null)
+    val forexFeedback: StateFlow<String?> = _forexFeedback.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val initialPair = availableCurrencyPairs[0]
+            val savedRate = repository.getSavedForexRate(initialPair.id, initialPair.defaultRate)
+            _forexRate.value = savedRate
+            _forexRateInput.value = if (savedRate % 1.0 == 0.0) savedRate.toLong().toString() else String.format(java.util.Locale.US, "%.2f", savedRate)
+        }
+    }
+
+    fun selectCurrencyPair(pair: CurrencyPair) {
+        _selectedPair.value = pair
+        viewModelScope.launch {
+            val savedRate = repository.getSavedForexRate(pair.id, pair.defaultRate)
+            _forexRate.value = savedRate
+            _forexRateInput.value = if (savedRate % 1.0 == 0.0) savedRate.toLong().toString() else String.format(java.util.Locale.US, "%.2f", savedRate)
+            _forexFeedback.value = null
+        }
+    }
+
+    fun onForexBaseAmountChanged(input: String) {
+        val clean = input.filter { it.isDigit() || it == '.' }
+        if (clean.count { it == '.' } <= 1) {
+            _forexBaseAmountInput.value = clean
+        }
+    }
+
+    fun onForexRateInputChanged(input: String) {
+        val clean = input.filter { it.isDigit() || it == '.' }
+        if (clean.count { it == '.' } <= 1) {
+            _forexRateInput.value = clean
+            val parsed = clean.toDoubleOrNull()
+            if (parsed != null && parsed > 0.0) {
+                _forexRate.value = parsed
+            }
+        }
+    }
+
+    fun adjustForexRate(delta: Double) {
+        val current = _forexRate.value
+        val updated = (current + delta).coerceAtLeast(0.01)
+        val formatted = String.format(java.util.Locale.US, "%.2f", updated)
+        val rounded = formatted.toDouble()
+        _forexRate.value = rounded
+        _forexRateInput.value = if (rounded % 1.0 == 0.0) rounded.toLong().toString() else formatted
+        saveForexRate()
+    }
+
+    fun saveForexRate() {
+        val pair = _selectedPair.value
+        val rateToSave = _forexRateInput.value.toDoubleOrNull() ?: _forexRate.value
+        if (rateToSave <= 0.0) return
+
+        _forexRate.value = rateToSave
+        viewModelScope.launch {
+            repository.setForexRate(pair.id, rateToSave)
+            val displayRate = if (rateToSave % 1.0 == 0.0) rateToSave.toLong().toString() else String.format(java.util.Locale.US, "%.2f", rateToSave)
+            _forexFeedback.value = "Saved! 1 ${pair.baseCode} = $displayRate ${pair.targetCode}"
+        }
+    }
+
+    fun resetForexRateToDefault() {
+        val pair = _selectedPair.value
+        _forexRate.value = pair.defaultRate
+        _forexRateInput.value = if (pair.defaultRate % 1.0 == 0.0) pair.defaultRate.toLong().toString() else String.format(java.util.Locale.US, "%.2f", pair.defaultRate)
+        viewModelScope.launch {
+            repository.setForexRate(pair.id, pair.defaultRate)
+            _forexFeedback.value = "Reset to default: 1 ${pair.baseCode} = ${pair.defaultRate} ${pair.targetCode}"
+        }
+    }
+
+    fun toggleInvertForex() {
+        _isForexInverted.value = !_isForexInverted.value
+    }
+
+    fun transferForexToAllocator(onSuccess: () -> Unit) {
+        val pair = _selectedPair.value
+        val baseAmount = _forexBaseAmountInput.value.toDoubleOrNull() ?: 0.0
+        if (baseAmount <= 0.0) return
+
+        val rate = _forexRate.value
+        val targetAmount = if (_isForexInverted.value) {
+            if (rate > 0) baseAmount / rate else 0.0
+        } else {
+            baseAmount * rate
+        }
+
+        if (targetAmount <= 0.0) return
+
+        val formattedAmount = if (targetAmount % 1.0 == 0.0) {
+            targetAmount.toLong().toString()
+        } else {
+            String.format(java.util.Locale.US, "%.2f", targetAmount)
+        }
+
+        _amountInput.value = formattedAmount
+        val baseSymbol = if (_isForexInverted.value) pair.targetSymbol else pair.baseSymbol
+        val targetSymbol = if (_isForexInverted.value) pair.baseSymbol else pair.targetSymbol
+        val displayBase = if (baseAmount % 1.0 == 0.0) baseAmount.toLong().toString() else String.format(java.util.Locale.US, "%.2f", baseAmount)
+        _noteInput.value = "Forex: $baseSymbol$displayBase @ $rate -> $targetSymbol$formattedAmount"
+        onSuccess()
+    }
+
+    fun allocateForexDirectly() {
+        val pair = _selectedPair.value
+        val baseAmount = _forexBaseAmountInput.value.toDoubleOrNull() ?: 0.0
+        if (baseAmount <= 0.0) return
+
+        val rate = _forexRate.value
+        val targetAmount = if (_isForexInverted.value) {
+            if (rate > 0) baseAmount / rate else 0.0
+        } else {
+            baseAmount * rate
+        }
+
+        if (targetAmount <= 0.0) return
+
+        val baseSymbol = if (_isForexInverted.value) pair.targetSymbol else pair.baseSymbol
+        val targetSymbol = if (_isForexInverted.value) pair.baseSymbol else pair.targetSymbol
+        val displayBase = if (baseAmount % 1.0 == 0.0) baseAmount.toLong().toString() else String.format(java.util.Locale.US, "%.2f", baseAmount)
+        val formattedTarget = if (targetAmount % 1.0 == 0.0) targetAmount.toLong().toString() else String.format(java.util.Locale.US, "%.2f", targetAmount)
+        val note = "Forex: $baseSymbol$displayBase @ $rate -> $targetSymbol$formattedTarget"
+
+        viewModelScope.launch {
+            val (savedAllocation, savedSplits) = repository.allocateMoney(targetAmount, note)
+            _allocationSuccessEvent.value = AllocationSuccessEvent(
+                allocation = savedAllocation,
+                splits = savedSplits,
+                currency = targetSymbol
+            )
+            _forexFeedback.value = "Allocated $targetSymbol$formattedTarget into your categories!"
         }
     }
 }

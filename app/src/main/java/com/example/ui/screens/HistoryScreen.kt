@@ -18,15 +18,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,11 +43,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.AllocationWithSplits
 import com.example.data.model.ExpenseEntity
+import com.example.ui.components.AppleSegmentedControl
 import com.example.ui.components.LiquidCyan
-import com.example.ui.components.LiquidEmerald
 import com.example.ui.components.LiquidGlassCard
 import com.example.ui.components.LiquidMint
 import com.example.ui.components.LiquidRose
+import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.components.formatCurrency
 import com.example.ui.components.parseColorSafe
 import com.example.ui.viewmodel.MoneyViewModel
@@ -74,6 +73,10 @@ fun HistoryScreen(
     viewModel: MoneyViewModel,
     modifier: Modifier = Modifier
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
+
     val currency by viewModel.currencySymbol.collectAsStateWithLifecycle()
     val allocations by viewModel.allocationsWithSplits.collectAsStateWithLifecycle()
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
@@ -118,14 +121,14 @@ fun HistoryScreen(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(LiquidMint)
+                            .background(if (isDark) LiquidMint else Color(0xFF0D9488))
                     )
                     Text(
                         text = "TRANSACTION LEDGER",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.2.sp,
-                        color = LiquidMint
+                        color = if (isDark) LiquidMint else Color(0xFF0D9488)
                     )
                 }
                 Spacer(modifier = Modifier.height(2.dp))
@@ -133,7 +136,7 @@ fun HistoryScreen(
                     text = "Money Allocation History",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFF8FAFC)
+                    color = textColorPrimary
                 )
             }
         }
@@ -150,17 +153,17 @@ fun HistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Total Allocated Over Time",
+                    text = "Cumulative Category Distribution",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFF8FAFC)
+                    color = textColorPrimary
                 )
 
                 if (totalAllocatedOverall <= 0.0) {
                     Text(
                         text = "No allocations yet. When you receive money, your cumulative category distribution will show here.",
                         fontSize = 12.sp,
-                        color = Color(0xFF94A3B8)
+                        color = textColorSecondary
                     )
                 } else {
                     summaries.forEach { cat ->
@@ -182,13 +185,13 @@ fun HistoryScreen(
                                             .size(8.dp)
                                             .clip(CircleShape)
                                             .background(catColor)
-                                            .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                                            .border(1.dp, if (isDark) Color.White.copy(alpha = 0.5f) else Color(0x330F172A), CircleShape)
                                     )
                                     Text(
                                         text = cat.name,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFFF8FAFC)
+                                        color = textColorPrimary
                                     )
                                 }
                                 Text(
@@ -203,7 +206,7 @@ fun HistoryScreen(
                                     .fillMaxWidth()
                                     .height(6.dp)
                                     .clip(RoundedCornerShape(3.dp))
-                                    .background(Color(0x28FFFFFF))
+                                    .background(if (isDark) Color(0x28FFFFFF) else Color(0x150F172A))
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -219,47 +222,13 @@ fun HistoryScreen(
             }
         }
 
-        // Frosted Glass Filter Chips
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf("All", "Allocations", "Expenses").forEach { filter ->
-                val isSelected = selectedFilter == filter
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(
-                            if (isSelected) {
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFF0D9488), Color(0xFF10B981))
-                                )
-                            } else {
-                                Brush.verticalGradient(
-                                    listOf(Color(0x26FFFFFF), Color(0x10FFFFFF))
-                                )
-                            }
-                        )
-                        .border(
-                            1.dp,
-                            Brush.verticalGradient(
-                                if (isSelected) listOf(Color(0xCCFFFFFF), Color(0x40FFFFFF))
-                                else listOf(Color(0x30FFFFFF), Color(0x10FFFFFF))
-                            ),
-                            RoundedCornerShape(14.dp)
-                        )
-                        .clickable { selectedFilter = filter }
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = filter,
-                        fontSize = 12.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color.White else Color(0xFFCBD5E1)
-                    )
-                }
-            }
-        }
+        // Apple Segmented Control Filter
+        AppleSegmentedControl(
+            items = listOf("All", "Allocations", "Expenses"),
+            selectedItem = selectedFilter,
+            onItemSelected = { selectedFilter = it },
+            getItemLabel = { it }
+        )
 
         // Transactions List
         if (allHistoryItems.isEmpty()) {
@@ -276,13 +245,13 @@ fun HistoryScreen(
                     Icon(
                         imageVector = Icons.Default.Receipt,
                         contentDescription = null,
-                        tint = Color(0x6694A3B8),
+                        tint = textColorSecondary.copy(alpha = 0.4f),
                         modifier = Modifier.size(44.dp)
                     )
                     Text(
                         text = "No transactions recorded yet",
                         fontSize = 14.sp,
-                        color = Color(0xFF94A3B8)
+                        color = textColorSecondary
                     )
                 }
             }
@@ -291,7 +260,7 @@ fun HistoryScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(allHistoryItems, key = { item ->
                     when (item) {
@@ -330,6 +299,10 @@ fun AllocationHistoryCard(
     currency: String,
     onDelete: () -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
+
     val dateFormat = remember { SimpleDateFormat("d MMMM yyyy, h:mm a", Locale.getDefault()) }
     val dateString = remember(item.allocation.timestamp) {
         dateFormat.format(Date(item.allocation.timestamp))
@@ -360,16 +333,16 @@ fun AllocationHistoryCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(30.dp)
+                            .size(32.dp)
                             .clip(CircleShape)
-                            .background(LiquidMint.copy(alpha = 0.20f))
-                            .border(1.dp, LiquidMint.copy(alpha = 0.5f), CircleShape),
+                            .background(if (isDark) LiquidMint.copy(alpha = 0.20f) else Color(0x200D9488))
+                            .border(1.dp, if (isDark) LiquidMint.copy(alpha = 0.5f) else Color(0x400D9488), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ArrowDownward,
+                            imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                             contentDescription = null,
-                            tint = LiquidMint,
+                            tint = if (isDark) LiquidMint else Color(0xFF0D9488),
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -378,13 +351,13 @@ fun AllocationHistoryCard(
                         Text(
                             text = dateString,
                             fontSize = 11.sp,
-                            color = Color(0xFF94A3B8)
+                            color = textColorSecondary
                         )
                         Text(
                             text = "Received: ${formatCurrency(item.allocation.totalAmount, currency)}",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFF8FAFC)
+                            color = textColorPrimary
                         )
                     }
                 }
@@ -396,7 +369,7 @@ fun AllocationHistoryCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete entry",
-                        tint = Color(0xFF94A3B8),
+                        tint = textColorSecondary,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -406,12 +379,12 @@ fun AllocationHistoryCard(
                 Text(
                     text = "Note: ${item.allocation.note}",
                     fontSize = 12.sp,
-                    color = Color(0xFFCBD5E1)
+                    color = textColorSecondary
                 )
             }
 
             HorizontalDivider(
-                color = Color(0x26FFFFFF),
+                color = if (isDark) Color(0x26FFFFFF) else Color(0x150F172A),
                 thickness = 0.8.dp
             )
 
@@ -429,13 +402,13 @@ fun AllocationHistoryCard(
                         Text(
                             text = split.categoryName,
                             fontSize = 13.sp,
-                            color = Color(0xFFE2E8F0)
+                            color = textColorPrimary
                         )
                         Text(
                             text = "${formatCurrency(split.amount, currency)} (${split.percentage.toInt()}%)",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = LiquidMint
+                            color = if (isDark) LiquidMint else Color(0xFF059669)
                         )
                     }
                 }
@@ -450,6 +423,10 @@ fun ExpenseHistoryCard(
     currency: String,
     onDelete: () -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
+
     val dateFormat = remember { SimpleDateFormat("d MMMM yyyy, h:mm a", Locale.getDefault()) }
     val dateString = remember(item.timestamp) {
         dateFormat.format(Date(item.timestamp))
@@ -476,14 +453,14 @@ fun ExpenseHistoryCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(32.dp)
                         .clip(CircleShape)
-                        .background(LiquidRose.copy(alpha = 0.20f))
-                        .border(1.dp, LiquidRose.copy(alpha = 0.5f), CircleShape),
+                        .background(if (isDark) LiquidRose.copy(alpha = 0.20f) else Color(0x20E11D48))
+                        .border(1.dp, if (isDark) LiquidRose.copy(alpha = 0.5f) else Color(0x40E11D48), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ArrowUpward,
+                        imageVector = Icons.AutoMirrored.Filled.TrendingDown,
                         contentDescription = null,
                         tint = LiquidRose,
                         modifier = Modifier.size(16.dp)
@@ -495,12 +472,12 @@ fun ExpenseHistoryCard(
                         text = item.description.ifBlank { "Expense" },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF8FAFC)
+                        color = textColorPrimary
                     )
                     Text(
                         text = "${item.categoryName} • $dateString",
                         fontSize = 11.sp,
-                        color = Color(0xFF94A3B8)
+                        color = textColorSecondary
                     )
                 }
             }
@@ -520,7 +497,7 @@ fun ExpenseHistoryCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete expense",
-                        tint = Color(0xFF94A3B8),
+                        tint = textColorSecondary,
                         modifier = Modifier.size(16.dp)
                     )
                 }

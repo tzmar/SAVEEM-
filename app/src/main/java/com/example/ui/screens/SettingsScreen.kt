@@ -22,15 +22,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SettingsBrightness
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -93,6 +95,10 @@ fun SettingsScreen(
     var newCatPercentage by remember { mutableStateOf("") }
     var newCatDesc by remember { mutableStateOf("") }
 
+    val isDark = LocalIsDarkTheme.current
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
+
     LaunchedEffect(Unit) {
         viewModel.loadEditableCategories()
     }
@@ -104,23 +110,26 @@ fun SettingsScreen(
         abs(totalPercentage - 100.0) <= 0.01
     }
 
-    // Reset Confirmation Dialog (Liquid Glass)
+    // Reset Confirmation Dialog
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
-            containerColor = Color(0xF20B1A22),
+            containerColor = if (isDark) Color(0xF20B1A22) else Color(0xFFFFFFFF),
             modifier = Modifier.border(
                 1.2.dp,
-                Brush.verticalGradient(listOf(Color(0x80FFFFFF), Color(0x30F43F5E), Color(0x15FFFFFF))),
+                Brush.verticalGradient(
+                    if (isDark) listOf(Color(0x80FFFFFF), Color(0x30F43F5E), Color(0x15FFFFFF))
+                    else listOf(Color(0x20000000), Color(0x10F43F5E), Color(0x08000000))
+                ),
                 RoundedCornerShape(24.dp)
             ),
             title = {
-                Text("Reset All App Data?", fontWeight = FontWeight.Bold, color = Color(0xFFF8FAFC))
+                Text("Reset All App Data?", fontWeight = FontWeight.Bold, color = textColorPrimary)
             },
             text = {
                 Text(
-                    "This will permanently delete all recorded allocations, expenses, and custom goals, restoring preset categories (40%, 30%, 20%, 10%) and Botswana Pula (P).",
-                    color = Color(0xFFCBD5E1),
+                    "This will permanently delete all recorded allocations, expenses, and custom goals, restoring default categories (40%, 30%, 20%, 10%) and Botswana Pula (P).",
+                    color = textColorSecondary,
                     fontSize = 13.sp
                 )
             },
@@ -139,25 +148,28 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showResetDialog = false }) {
-                    Text("Cancel", color = Color(0xFF94A3B8))
+                    Text("Cancel", color = textColorSecondary)
                 }
             },
             shape = RoundedCornerShape(24.dp)
         )
     }
 
-    // Add Category Dialog (Liquid Glass)
+    // Add Category Dialog
     if (showAddCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showAddCategoryDialog = false },
-            containerColor = Color(0xF20B1A22),
+            containerColor = if (isDark) Color(0xF20B1A22) else Color(0xFFFFFFFF),
             modifier = Modifier.border(
                 1.2.dp,
-                Brush.verticalGradient(listOf(Color(0x80FFFFFF), Color(0x3038BDF8), Color(0x15FFFFFF))),
+                Brush.verticalGradient(
+                    if (isDark) listOf(Color(0x80FFFFFF), Color(0x3038BDF8), Color(0x15FFFFFF))
+                    else listOf(Color(0x20000000), Color(0x100284C7), Color(0x08000000))
+                ),
                 RoundedCornerShape(24.dp)
             ),
             title = {
-                Text("Add New Category", fontWeight = FontWeight.Bold, color = Color(0xFFF8FAFC))
+                Text("Add New Category", fontWeight = FontWeight.Bold, color = textColorPrimary)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -169,8 +181,10 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LiquidCyan,
-                            unfocusedBorderColor = Color(0x33FFFFFF)
+                            focusedBorderColor = if (isDark) LiquidCyan else Color(0xFF0284C7),
+                            unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x200F172A),
+                            focusedTextColor = textColorPrimary,
+                            unfocusedTextColor = textColorPrimary
                         )
                     )
                     OutlinedTextField(
@@ -179,14 +193,16 @@ fun SettingsScreen(
                             if (input.all { it.isDigit() || it == '.' }) newCatPercentage = input
                         },
                         label = { Text("Percentage (%)") },
-                        suffix = { Text("%", color = LiquidCyan) },
+                        suffix = { Text("%", color = if (isDark) LiquidCyan else Color(0xFF0284C7)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LiquidCyan,
-                            unfocusedBorderColor = Color(0x33FFFFFF)
+                            focusedBorderColor = if (isDark) LiquidCyan else Color(0xFF0284C7),
+                            unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x200F172A),
+                            focusedTextColor = textColorPrimary,
+                            unfocusedTextColor = textColorPrimary
                         )
                     )
                     OutlinedTextField(
@@ -197,8 +213,10 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LiquidCyan,
-                            unfocusedBorderColor = Color(0x33FFFFFF)
+                            focusedBorderColor = if (isDark) LiquidCyan else Color(0xFF0284C7),
+                            unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x200F172A),
+                            focusedTextColor = textColorPrimary,
+                            unfocusedTextColor = textColorPrimary
                         )
                     )
                 }
@@ -221,7 +239,7 @@ fun SettingsScreen(
                         }
                     },
                     enabled = newCatName.isNotBlank() && (newCatPercentage.toDoubleOrNull() ?: 0.0) > 0.0,
-                    colors = ButtonDefaults.buttonColors(containerColor = LiquidCyan),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isDark) LiquidCyan else Color(0xFF0284C7)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Add", fontWeight = FontWeight.Bold, color = Color.White)
@@ -229,16 +247,12 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showAddCategoryDialog = false }) {
-                    Text("Cancel", color = Color(0xFF94A3B8))
+                    Text("Cancel", color = textColorSecondary)
                 }
             },
             shape = RoundedCornerShape(24.dp)
         )
     }
-
-    val isDarkTheme = LocalIsDarkTheme.current
-    val headerTextColor = if (isDarkTheme) Color(0xFFF8FAFC) else Color(0xFF0F172A)
-    val bodySubTextColor = if (isDarkTheme) Color(0xFF94A3B8) else Color(0xFF64748B)
 
     Column(
         modifier = modifier
@@ -247,7 +261,7 @@ fun SettingsScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // Title
+        // Settings Header
         Column {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -257,26 +271,26 @@ fun SettingsScreen(
                     modifier = Modifier
                         .size(8.dp)
                         .clip(CircleShape)
-                        .background(LiquidCyan)
+                        .background(if (isDark) LiquidCyan else Color(0xFF0284C7))
                 )
                 Text(
-                    text = "SETTINGS & RULES",
+                    text = "SETTINGS",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.2.sp,
-                    color = LiquidCyan
+                    color = if (isDark) LiquidCyan else Color(0xFF0284C7)
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Category Allocations & Currency",
+                text = "Preferences & Allocation Engine",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = headerTextColor
+                color = textColorPrimary
             )
         }
 
-        // Percentage Validation Status Banner (Liquid Glass)
+        // Percentage Validation Status Banner
         LiquidGlassCard(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(18.dp),
@@ -304,7 +318,7 @@ fun SettingsScreen(
                     Icon(
                         imageVector = if (isExactly100) Icons.Default.Check else Icons.Default.Warning,
                         contentDescription = null,
-                        tint = if (isExactly100) LiquidMint else Color(0xFFF59E0B),
+                        tint = if (isExactly100) (if (isDark) LiquidMint else Color(0xFF059669)) else Color(0xFFF59E0B),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -320,12 +334,12 @@ fun SettingsScreen(
                         },
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isExactly100) LiquidMint else Color(0xFFFBBF24)
+                        color = if (isExactly100) (if (isDark) LiquidMint else Color(0xFF059669)) else Color(0xFFD97706)
                     )
                     Text(
-                        text = "The app enforces that category percentages total exactly 100%.",
+                        text = "SAVEEM automatically validates that category percentages total exactly 100%.",
                         fontSize = 11.sp,
-                        color = Color(0xFF94A3B8)
+                        color = textColorSecondary
                     )
                 }
             }
@@ -341,13 +355,13 @@ fun SettingsScreen(
                     text = msg,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = LiquidMint,
+                    color = if (isDark) LiquidMint else Color(0xFF059669),
                     modifier = Modifier.padding(14.dp)
                 )
             }
         }
 
-        // Section: Category percentage editor list
+        // Section 1: Money Allocation Categories
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -355,17 +369,17 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Preset Categories (${editableCategories.size})",
+                    text = "Allocation Categories (${editableCategories.size})",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = headerTextColor
+                    color = textColorPrimary
                 )
 
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0x2238BDF8))
-                        .border(1.dp, Color(0x6638BDF8), RoundedCornerShape(12.dp))
+                        .background(if (isDark) Color(0x2238BDF8) else Color(0x150284C7))
+                        .border(1.dp, if (isDark) Color(0x6638BDF8) else Color(0x300284C7), RoundedCornerShape(12.dp))
                         .clickable { showAddCategoryDialog = true }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                         .testTag("add_category_button")
@@ -374,8 +388,8 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = LiquidCyan, modifier = Modifier.size(16.dp))
-                        Text("Add Category", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LiquidCyan)
+                        Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = if (isDark) LiquidCyan else Color(0xFF0284C7), modifier = Modifier.size(16.dp))
+                        Text("Add Category", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (isDark) LiquidCyan else Color(0xFF0284C7))
                     }
                 }
             }
@@ -397,9 +411,9 @@ fun SettingsScreen(
                 enabled = isExactly100,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
+                    .height(52.dp)
                     .testTag("save_categories_button"),
-                gradientColors = if (isExactly100) listOf(Color(0xFF0EA5E9), Color(0xFF10B981)) else listOf(Color(0x33FFFFFF), Color(0x1AFFFFFF))
+                gradientColors = if (isExactly100) listOf(Color(0xFF0EA5E9), Color(0xFF10B981)) else listOf(Color(0x33888888), Color(0x1A888888))
             ) {
                 Icon(imageVector = Icons.Default.Save, contentDescription = null, tint = Color.White)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -412,7 +426,7 @@ fun SettingsScreen(
             }
         }
 
-        // Section: Currency Settings (Liquid Glass Card)
+        // Section 2: Currency Settings
         LiquidGlassCard(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -428,12 +442,12 @@ fun SettingsScreen(
                     text = "Currency Symbol",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = headerTextColor
+                    color = textColorPrimary
                 )
                 Text(
-                    text = "Default is Botswana Pula (P). Change to any preferred currency.",
+                    text = "Botswana Pula (P) is standard. Select quick options or input any symbol.",
                     fontSize = 12.sp,
-                    color = bodySubTextColor
+                    color = textColorSecondary
                 )
 
                 Row(
@@ -450,12 +464,13 @@ fun SettingsScreen(
                                     if (isSelected) {
                                         Brush.horizontalGradient(listOf(Color(0xFF0D9488), Color(0xFF10B981)))
                                     } else {
-                                        Brush.verticalGradient(listOf(Color(0x26FFFFFF), Color(0x10FFFFFF)))
+                                        if (isDark) Brush.verticalGradient(listOf(Color(0x26FFFFFF), Color(0x10FFFFFF)))
+                                        else Brush.verticalGradient(listOf(Color(0x0A0F172A), Color(0x040F172A)))
                                     }
                                 )
                                 .border(
                                     1.dp,
-                                    if (isSelected) Color.White.copy(alpha = 0.8f) else Color(0x33FFFFFF),
+                                    if (isSelected) Color.White.copy(alpha = 0.8f) else if (isDark) Color(0x33FFFFFF) else Color(0x150F172A),
                                     RoundedCornerShape(12.dp)
                                 )
                                 .clickable { viewModel.setCurrency(sym) }
@@ -466,7 +481,7 @@ fun SettingsScreen(
                                 text = sym,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isSelected) Color.White else Color(0xFFE2E8F0)
+                                color = if (isSelected) Color.White else textColorPrimary
                             )
                         }
                     }
@@ -480,13 +495,15 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = customCurrencyInput,
                         onValueChange = { customCurrencyInput = it },
-                        placeholder = { Text("Custom symbol (e.g. BWP, KSh)", color = Color(0xFF64748B)) },
+                        placeholder = { Text("Custom symbol (e.g. BWP, KSh)", color = textColorSecondary) },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LiquidCyan,
-                            unfocusedBorderColor = Color(0x33FFFFFF)
+                            focusedBorderColor = if (isDark) LiquidCyan else Color(0xFF0284C7),
+                            unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x200F172A),
+                            focusedTextColor = textColorPrimary,
+                            unfocusedTextColor = textColorPrimary
                         )
                     )
                     Button(
@@ -497,7 +514,7 @@ fun SettingsScreen(
                             }
                         },
                         enabled = customCurrencyInput.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(containerColor = LiquidCyan),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (isDark) LiquidCyan else Color(0xFF0284C7)),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Apply", fontWeight = FontWeight.Bold, color = Color.White)
@@ -506,11 +523,7 @@ fun SettingsScreen(
             }
         }
 
-        // Section: Appearance & Themes (Liquid Glass Card)
-        val isDarkThemeActive = LocalIsDarkTheme.current
-        val cardTextColor = if (isDarkThemeActive) Color(0xFFF8FAFC) else Color(0xFF0F172A)
-        val subTextColor = if (isDarkThemeActive) Color(0xFF94A3B8) else Color(0xFF64748B)
-
+        // Section 3: Appearance & Themes
         LiquidGlassCard(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -529,22 +542,21 @@ fun SettingsScreen(
                     Icon(
                         imageVector = Icons.Default.Palette,
                         contentDescription = null,
-                        tint = LiquidCyan,
+                        tint = if (isDark) LiquidCyan else Color(0xFF0284C7),
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
                         text = "App Theme & Appearance",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = cardTextColor
+                        color = textColorPrimary
                     )
                 }
 
                 Text(
-                    text = "Select your preferred Liquid Glass aesthetic. All themes retain the specular glass highlights, glowing liquid orbs, and luminous accents.",
+                    text = "Refined fintech theme with subtle ambient backdrop and high-contrast typography.",
                     fontSize = 12.sp,
-                    color = subTextColor,
-                    lineHeight = 16.sp
+                    color = textColorSecondary
                 )
 
                 // Theme Mode Selector Cards
@@ -563,9 +575,9 @@ fun SettingsScreen(
                                 .clip(RoundedCornerShape(14.dp))
                                 .background(
                                     if (isSelected) {
-                                        if (isDarkThemeActive) Color(0x3306B6D4) else Color(0x250D9488)
+                                        if (isDark) Color(0x3306B6D4) else Color(0x200D9488)
                                     } else {
-                                        if (isDarkThemeActive) Color(0x14FFFFFF) else Color(0x0A000000)
+                                        if (isDark) Color(0x14FFFFFF) else Color(0x06000000)
                                     }
                                 )
                                 .border(
@@ -573,7 +585,8 @@ fun SettingsScreen(
                                     brush = if (isSelected) {
                                         Brush.horizontalGradient(listOf(LiquidCyan, LiquidMint))
                                     } else {
-                                        Brush.horizontalGradient(listOf(Color(0x22FFFFFF), Color(0x11FFFFFF)))
+                                        if (isDark) Brush.horizontalGradient(listOf(Color(0x22FFFFFF), Color(0x11FFFFFF)))
+                                        else Brush.horizontalGradient(listOf(Color(0x150F172A), Color(0x0A0F172A)))
                                     },
                                     shape = RoundedCornerShape(14.dp)
                                 )
@@ -599,7 +612,7 @@ fun SettingsScreen(
                                     Icon(
                                         imageVector = icon,
                                         contentDescription = mode.title,
-                                        tint = if (isSelected) LiquidCyan else subTextColor,
+                                        tint = if (isSelected) (if (isDark) LiquidCyan else Color(0xFF0284C7)) else textColorSecondary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -609,12 +622,12 @@ fun SettingsScreen(
                                         text = mode.title,
                                         fontSize = 14.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) LiquidCyan else cardTextColor
+                                        color = if (isSelected) (if (isDark) LiquidCyan else Color(0xFF0284C7)) else textColorPrimary
                                     )
                                     Text(
                                         text = mode.subtitle,
                                         fontSize = 11.sp,
-                                        color = subTextColor
+                                        color = textColorSecondary
                                     )
                                 }
 
@@ -641,10 +654,11 @@ fun SettingsScreen(
             }
         }
 
-        // Section: Data Export & Reset (Liquid Glass Card)
+        // Section 4: Data Management (CSV Export & Reset)
         LiquidGlassCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp)
+            shape = RoundedCornerShape(20.dp),
+            tintColor = LiquidCyan
         ) {
             Column(
                 modifier = Modifier
@@ -652,12 +666,23 @@ fun SettingsScreen(
                     .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text(
-                    text = "Data Management",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = headerTextColor
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Storage,
+                        contentDescription = null,
+                        tint = if (isDark) LiquidCyan else Color(0xFF0284C7),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "Data Management",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textColorPrimary
+                    )
+                }
 
                 OutlinedButton(
                     onClick = { viewModel.exportData(context) },
@@ -665,9 +690,9 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .testTag("export_csv_button"),
                     shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x40FFFFFF)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) Color(0x40FFFFFF) else Color(0x200F172A)),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = LiquidCyan
+                        contentColor = if (isDark) LiquidCyan else Color(0xFF0284C7)
                     )
                 ) {
                     Icon(imageVector = Icons.Default.FileDownload, contentDescription = null)
@@ -694,6 +719,50 @@ fun SettingsScreen(
             }
         }
 
+        // Section 5: Offline First & Privacy Assurance
+        LiquidGlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            tintColor = LiquidMint
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(if (isDark) Color(0x2034D399) else Color(0x200D9488)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = if (isDark) LiquidMint else Color(0xFF0D9488),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "100% Private & Offline",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textColorPrimary
+                    )
+                    Text(
+                        text = "All income, categories, goals, and expense allocations are saved strictly on this device. No data ever leaves your phone.",
+                        fontSize = 11.sp,
+                        color = textColorSecondary
+                    )
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
@@ -705,6 +774,8 @@ fun EditableCategoryCard(
     onUpdate: (String, Double, String) -> Unit,
     onDelete: () -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0F172A)
     val catColor = parseColorSafe(category.colorHex)
     var name by remember(category.name) { mutableStateOf(category.name) }
     var percentageText by remember(category.percentage) { mutableStateOf(category.percentage.toInt().toString()) }
@@ -731,7 +802,7 @@ fun EditableCategoryCard(
                         .size(12.dp)
                         .clip(CircleShape)
                         .background(catColor)
-                        .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+                        .border(1.dp, if (isDark) Color.White.copy(alpha = 0.6f) else Color(0x330F172A), CircleShape)
                 )
 
                 OutlinedTextField(
@@ -746,7 +817,9 @@ fun EditableCategoryCard(
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = catColor,
-                        unfocusedBorderColor = Color(0x33FFFFFF)
+                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x200F172A),
+                        focusedTextColor = textColorPrimary,
+                        unfocusedTextColor = textColorPrimary
                     )
                 )
 
@@ -766,7 +839,9 @@ fun EditableCategoryCard(
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = catColor,
-                        unfocusedBorderColor = Color(0x33FFFFFF)
+                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x200F172A),
+                        focusedTextColor = textColorPrimary,
+                        unfocusedTextColor = textColorPrimary
                     )
                 )
 
@@ -796,7 +871,9 @@ fun EditableCategoryCard(
                 shape = RoundedCornerShape(10.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = catColor,
-                    unfocusedBorderColor = Color(0x33FFFFFF)
+                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x200F172A),
+                    focusedTextColor = textColorPrimary,
+                    unfocusedTextColor = textColorPrimary
                 )
             )
         }

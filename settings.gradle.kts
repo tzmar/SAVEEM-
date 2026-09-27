@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Income Allocator"
+rootProject.name = "SAVEEM"
 
 include(":app")

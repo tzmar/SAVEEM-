@@ -9,8 +9,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -24,7 +26,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -33,7 +34,6 @@ import androidx.compose.runtime.remember
 import com.example.ui.theme.LocalIsDarkTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
@@ -73,17 +73,18 @@ fun glassBorderBrush(
     bottomShadow: Color = GlassBorderBottom,
     tint: Color? = null
 ): Brush {
-    val top = tint?.copy(alpha = 0.65f) ?: topHighlight
-    val mid = tint?.copy(alpha = 0.25f) ?: midHighlight
-    val bottom = tint?.copy(alpha = 0.12f) ?: bottomShadow
+    val top = tint?.copy(alpha = 0.55f) ?: topHighlight
+    val mid = tint?.copy(alpha = 0.20f) ?: midHighlight
+    val bottom = tint?.copy(alpha = 0.08f) ?: bottomShadow
     return Brush.verticalGradient(
         colors = listOf(top, mid, bottom)
     )
 }
 
 /**
- * Ambient Liquid Background containing layered glowing liquid orbs and dark obsidian depth.
- * Frosted translucent glass components placed over this background will naturally catch the liquid glow.
+ * Ambient Liquid & Apple Background containing subtle layered glowing liquid orbs and depth.
+ * Light mode uses Apple system grouped light (#F2F2F7) with maximum text readability.
+ * Dark mode uses ultra-deep obsidian (#000000) with subtle ambient glow.
  */
 @Composable
 fun LiquidGlassBackground(
@@ -94,17 +95,17 @@ fun LiquidGlassBackground(
     val backgroundBrush = if (isDark) {
         Brush.verticalGradient(
             colors = listOf(
-                Color(0xFF071317), // Deep obsidian teal
-                Color(0xFF050E12),
-                Color(0xFF03080A)
+                Color(0xFF070B10), // Deep obsidian
+                Color(0xFF020406),
+                Color(0xFF000000)
             )
         )
     } else {
         Brush.verticalGradient(
             colors = listOf(
-                Color(0xFFF0FDF4), // Luminous ice/mint white
-                Color(0xFFE2E8F0),
-                Color(0xFFCBD5E1)
+                Color(0xFFF2F2F7), // Apple System Grouped Background
+                Color(0xFFEBEBF0),
+                Color(0xFFE5E5EA)
             )
         )
     }
@@ -114,98 +115,54 @@ fun LiquidGlassBackground(
             .fillMaxSize()
             .background(backgroundBrush)
     ) {
-        // Floating Ambient Liquid Orbs drawn onto Canvas with rich radial blur
+        // Floating Ambient Liquid Orbs drawn onto Canvas
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
             val height = size.height
 
             if (isDark) {
-                // Orb 1: Glowing Cyan/Teal at top-right
+                // Orb 1: Controlled Cyan/Teal at top-right
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0x5506B6D4),
-                            Color(0x300D9488),
+                            Color(0x3206B6D4),
+                            Color(0x140D9488),
                             Color.Transparent
                         ),
-                        center = Offset(width * 0.85f, height * 0.12f),
-                        radius = width * 0.7f
+                        center = Offset(width * 0.85f, height * 0.10f),
+                        radius = width * 0.65f
                     ),
-                    radius = width * 0.7f,
-                    center = Offset(width * 0.85f, height * 0.12f)
+                    radius = width * 0.65f,
+                    center = Offset(width * 0.85f, height * 0.10f)
                 )
 
                 // Orb 2: Emerald/Mint at center-left
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0x4510B981),
-                            Color(0x20059669),
+                            Color(0x2410B981),
+                            Color(0x0C059669),
                             Color.Transparent
                         ),
                         center = Offset(width * 0.10f, height * 0.45f),
-                        radius = width * 0.65f
+                        radius = width * 0.60f
                     ),
-                    radius = width * 0.65f,
+                    radius = width * 0.60f,
                     center = Offset(width * 0.10f, height * 0.45f)
-                )
-
-                // Orb 3: Luminous Indigo/Electric Blue at bottom-right
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0x356366F1),
-                            Color(0x180284C7),
-                            Color.Transparent
-                        ),
-                        center = Offset(width * 0.80f, height * 0.85f),
-                        radius = width * 0.75f
-                    ),
-                    radius = width * 0.75f,
-                    center = Offset(width * 0.80f, height * 0.85f)
                 )
             } else {
-                // Light mode liquid orbs: soft cyan, emerald, and indigo glow
+                // Light mode: gentle ambient teal tint
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0x4038BDF8),
-                            Color(0x202DD4BF),
+                            Color(0x100D9488),
                             Color.Transparent
                         ),
-                        center = Offset(width * 0.85f, height * 0.12f),
-                        radius = width * 0.7f
-                    ),
-                    radius = width * 0.7f,
-                    center = Offset(width * 0.85f, height * 0.12f)
-                )
-
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0x3010B981),
-                            Color(0x1534D399),
-                            Color.Transparent
-                        ),
-                        center = Offset(width * 0.10f, height * 0.45f),
+                        center = Offset(width * 0.85f, height * 0.10f),
                         radius = width * 0.65f
                     ),
                     radius = width * 0.65f,
-                    center = Offset(width * 0.10f, height * 0.45f)
-                )
-
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0x25818CF8),
-                            Color(0x1038BDF8),
-                            Color.Transparent
-                        ),
-                        center = Offset(width * 0.80f, height * 0.85f),
-                        radius = width * 0.75f
-                    ),
-                    radius = width * 0.75f,
-                    center = Offset(width * 0.80f, height * 0.85f)
+                    center = Offset(width * 0.85f, height * 0.10f)
                 )
             }
         }
@@ -216,14 +173,16 @@ fun LiquidGlassBackground(
 }
 
 /**
- * Liquid Glass Card with specular beveled border, frosted gradient fill, and subtle gloss highlight.
+ * Apple-style Inset Grouped / Liquid Glass Card.
+ * In Light Mode: Pure white card with crisp 0.8dp outline and subtle shadow (100% visible words).
+ * In Dark Mode: Elevated frosted obsidian card with specular top highlight.
  */
 @Composable
 fun LiquidGlassCard(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(22.dp),
+    shape: Shape = RoundedCornerShape(18.dp),
     tintColor: Color? = null,
-    borderWidth: Dp = 1.dp,
+    borderWidth: Dp = 0.8.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = LocalIsDarkTheme.current
@@ -231,17 +190,17 @@ fun LiquidGlassCard(
         if (isDark) {
             Brush.verticalGradient(
                 colors = listOf(
-                    tintColor.copy(alpha = 0.18f),
-                    tintColor.copy(alpha = 0.06f),
-                    Color(0x140F172A)
+                    tintColor.copy(alpha = 0.14f),
+                    tintColor.copy(alpha = 0.04f),
+                    Color(0x140F1620)
                 )
             )
         } else {
             Brush.verticalGradient(
                 colors = listOf(
-                    tintColor.copy(alpha = 0.15f),
-                    Color(0xCCFFFFFF),
-                    Color(0xF0FFFFFF)
+                    tintColor.copy(alpha = 0.08f),
+                    Color(0xFFFFFFFF),
+                    Color(0xFFFFFFFF)
                 )
             )
         }
@@ -249,17 +208,16 @@ fun LiquidGlassCard(
         if (isDark) {
             Brush.verticalGradient(
                 colors = listOf(
-                    Color(0x2E2A4350), // Frosted translucent dark glass
-                    Color(0x18182830),
-                    Color(0x120C171C)
+                    Color(0xFF141A22), // Apple Elevated Dark card
+                    Color(0xFF0F151C),
+                    Color(0xFF0B1015)
                 )
             )
         } else {
             Brush.verticalGradient(
                 colors = listOf(
-                    Color(0xF2FFFFFF), // Luminous frosted light glass
-                    Color(0xE6F8FAFC),
-                    Color(0xDBF1F5F9)
+                    Color(0xFFFFFFFF), // Apple Crisp White card
+                    Color(0xFFFFFFFF)
                 )
             )
         }
@@ -268,32 +226,43 @@ fun LiquidGlassCard(
     Box(
         modifier = modifier
             .shadow(
-                elevation = 12.dp,
+                elevation = if (isDark) 5.dp else 2.dp,
                 shape = shape,
-                ambientColor = tintColor?.copy(alpha = 0.25f) ?: Color(0x40000000),
-                spotColor = tintColor?.copy(alpha = 0.45f) ?: Color(0x60000000)
+                ambientColor = if (isDark) Color(0x35000000) else Color(0x08000000),
+                spotColor = if (isDark) Color(0x50000000) else Color(0x10000000)
             )
             .clip(shape)
             .background(baseFill)
             .border(
                 width = borderWidth,
-                brush = glassBorderBrush(tint = tintColor),
+                brush = if (isDark) {
+                    glassBorderBrush(tint = tintColor)
+                } else {
+                    Brush.verticalGradient(
+                        listOf(
+                            (tintColor ?: Color(0xFF000000)).copy(alpha = if (tintColor != null) 0.25f else 0.12f),
+                            Color(0x12000000)
+                        )
+                    )
+                },
                 shape = shape
             )
             .drawBehind {
-                // Top inner glass reflection line
-                drawLine(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            (tintColor ?: Color.White).copy(alpha = 0.40f),
-                            Color.Transparent
-                        )
-                    ),
-                    start = Offset(size.width * 0.15f, 1f),
-                    end = Offset(size.width * 0.85f, 1f),
-                    strokeWidth = 1.5f
-                )
+                if (isDark) {
+                    // Top inner specular line
+                    drawLine(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                (tintColor ?: Color.White).copy(alpha = 0.22f),
+                                Color.Transparent
+                            )
+                        ),
+                        start = Offset(size.width * 0.15f, 1f),
+                        end = Offset(size.width * 0.85f, 1f),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
             }
     ) {
         content()
@@ -301,21 +270,26 @@ fun LiquidGlassCard(
 }
 
 /**
- * Liquid Glass Primary Button with luminous fluid gradient, specular highlight, and sleek border.
+ * Apple-style Primary Action Button with fluid gradient and rounded squircle shape.
  */
 @Composable
 fun LiquidGlassButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(18.dp),
-    gradientColors: List<Color> = listOf(Color(0xFF0EA5E9), Color(0xFF10B981)),
+    shape: Shape = RoundedCornerShape(14.dp),
+    gradientColors: List<Color> = listOf(Color(0xFF0D9488), Color(0xFF10B981)),
     content: @Composable RowScope.() -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
     val buttonBrush = if (enabled) {
         Brush.horizontalGradient(gradientColors)
     } else {
-        Brush.horizontalGradient(listOf(Color(0x2BFFFFFF), Color(0x1AFFFFFF)))
+        if (isDark) {
+            Brush.horizontalGradient(listOf(Color(0x2BFFFFFF), Color(0x1AFFFFFF)))
+        } else {
+            Brush.horizontalGradient(listOf(Color(0xFFE2E8F0), Color(0xFFCBD5E1)))
+        }
     }
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -323,20 +297,20 @@ fun LiquidGlassButton(
     Box(
         modifier = modifier
             .shadow(
-                elevation = if (enabled) 12.dp else 0.dp,
+                elevation = if (enabled) 6.dp else 0.dp,
                 shape = shape,
-                ambientColor = if (enabled) gradientColors.first().copy(alpha = 0.4f) else Color.Transparent,
-                spotColor = if (enabled) gradientColors.last().copy(alpha = 0.6f) else Color.Transparent
+                ambientColor = if (enabled) gradientColors.first().copy(alpha = 0.3f) else Color.Transparent,
+                spotColor = if (enabled) gradientColors.last().copy(alpha = 0.4f) else Color.Transparent
             )
             .clip(shape)
             .background(buttonBrush)
             .border(
-                width = 1.dp,
+                width = 0.8.dp,
                 brush = Brush.verticalGradient(
                     colors = if (enabled) {
-                        listOf(Color(0x80FFFFFF), Color(0x33FFFFFF), Color(0x10FFFFFF))
+                        listOf(Color(0x66FFFFFF), Color(0x22FFFFFF))
                     } else {
-                        listOf(Color(0x22FFFFFF), Color(0x0DFFFFFF))
+                        listOf(Color(0x18000000), Color(0x08000000))
                     }
                 ),
                 shape = shape
@@ -346,28 +320,11 @@ fun LiquidGlassButton(
                 interactionSource = interactionSource,
                 indication = ripple(color = Color.White),
                 onClick = onClick
-            )
-            .drawBehind {
-                if (enabled) {
-                    // Top gloss sheen arc
-                    drawLine(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.White.copy(alpha = 0.5f),
-                                Color.Transparent
-                            )
-                        ),
-                        start = Offset(size.width * 0.2f, 1f),
-                        end = Offset(size.width * 0.8f, 1f),
-                        strokeWidth = 2f
-                    )
-                }
-            },
+            ),
         contentAlignment = Alignment.Center
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             content = content
         )
@@ -375,7 +332,8 @@ fun LiquidGlassButton(
 }
 
 /**
- * Liquid Glass Pill Badge
+ * Apple & Liquid Glass Pill Badge.
+ * Automatically adapts text color and container contrast for Light & Dark mode.
  */
 @Composable
 fun LiquidGlassPill(
@@ -383,31 +341,113 @@ fun LiquidGlassPill(
     modifier: Modifier = Modifier,
     color: Color = LiquidMint
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val effectiveColor = if (isDark) {
+        color
+    } else {
+        when (color) {
+            LiquidMint, LiquidEmerald -> Color(0xFF047857)  // High-contrast emerald
+            LiquidCyan, LiquidTeal -> Color(0xFF0F766E)     // High-contrast teal
+            LiquidRose -> Color(0xFFBE123C)                 // High-contrast rose
+            LiquidGold -> Color(0xFFB45309)                 // High-contrast amber
+            LiquidIndigo -> Color(0xFF4338CA)               // High-contrast indigo
+            else -> color
+        }
+    }
+
     Box(
         modifier = modifier
             .clip(CircleShape)
-            .background(color.copy(alpha = 0.15f))
+            .background(if (isDark) effectiveColor.copy(alpha = 0.16f) else effectiveColor.copy(alpha = 0.10f))
             .border(
                 width = 1.dp,
                 brush = Brush.verticalGradient(
-                    listOf(color.copy(alpha = 0.6f), color.copy(alpha = 0.2f))
+                    listOf(
+                        effectiveColor.copy(alpha = if (isDark) 0.5f else 0.35f),
+                        effectiveColor.copy(alpha = if (isDark) 0.2f else 0.15f)
+                    )
                 ),
                 shape = CircleShape
             )
-            .padding(horizontal = 10.dp, vertical = 5.dp)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Text(
             text = text,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = color
+            color = effectiveColor
         )
     }
 }
 
 /**
- * Floating Liquid Glass Navigation Bar with pill items, glowing active indicators,
- * and beveled translucent glass backdrop.
+ * Apple iOS Segmented Control with sliding pill indicator.
+ */
+@Composable
+fun <T> AppleSegmentedControl(
+    items: List<T>,
+    selectedItem: T,
+    onItemSelected: (T) -> Unit,
+    getItemLabel: (T) -> String,
+    modifier: Modifier = Modifier
+) {
+    val isDark = LocalIsDarkTheme.current
+    val containerColor = if (isDark) Color(0xFF1E2632) else Color(0xFFE5E5EA)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(containerColor)
+            .border(
+                0.5.dp,
+                if (isDark) Color(0x28FFFFFF) else Color(0x18000000),
+                RoundedCornerShape(12.dp)
+            )
+            .padding(3.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            items.forEach { item ->
+                val isSelected = item == selectedItem
+                val label = getItemLabel(item)
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(9.dp))
+                        .background(
+                            if (isSelected) {
+                                if (isDark) Color(0xFF2C3545) else Color(0xFFFFFFFF)
+                            } else {
+                                Color.Transparent
+                            }
+                        )
+                        .clickable { onItemSelected(item) }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = 12.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) {
+                            if (isDark) Color(0xFFF8FAFC) else Color(0xFF0F172A)
+                        } else {
+                            if (isDark) Color(0xFF94A3B8) else Color(0xFF475569)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Floating Apple & Liquid Glass Navigation Bar.
+ * Clean iOS tab bar layout with 5 tabs, responsive icon + label.
  */
 @Composable
 fun <T> FloatingLiquidGlassNavBar(
@@ -423,71 +463,56 @@ fun <T> FloatingLiquidGlassNavBar(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        // Floating pill glass container
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 16.dp,
-                    shape = RoundedCornerShape(32.dp),
-                    ambientColor = if (isDark) Color(0x55000000) else Color(0x20000000),
-                    spotColor = if (isDark) Color(0x8006B6D4) else Color(0x300D9488)
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(26.dp),
+                    ambientColor = if (isDark) Color(0x55000000) else Color(0x14000000),
+                    spotColor = if (isDark) Color(0x4006B6D4) else Color(0x200D9488)
                 )
-                .clip(RoundedCornerShape(32.dp))
+                .clip(RoundedCornerShape(26.dp))
                 .background(
                     if (isDark) {
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xE0102028), // Frosted dark glass
-                                Color(0xDE0A161C),
-                                Color(0xF0060E12)
+                            listOf(
+                                Color(0xF2121820),
+                                Color(0xF50D1217)
                             )
                         )
                     } else {
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xF5FFFFFF), // Frosted light glass
-                                Color(0xECF8FAFC),
-                                Color(0xE0E2E8F0)
+                            listOf(
+                                Color(0xF8FFFFFF),
+                                Color(0xF2F8FAFC)
                             )
                         )
                     }
                 )
                 .border(
-                    width = 1.2.dp,
+                    width = 0.8.dp,
                     brush = if (isDark) {
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0x80FFFFFF),
-                                Color(0x3306B6D4),
-                                Color(0x1AFFFFFF)
+                            listOf(
+                                Color(0x44FFFFFF),
+                                Color(0x1A06B6D4),
+                                Color(0x10FFFFFF)
                             )
                         )
                     } else {
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0x90FFFFFF),
-                                Color(0x400D9488),
-                                Color(0x200D9488)
+                            listOf(
+                                Color(0x30000000),
+                                Color(0x14000000)
                             )
                         )
                     },
-                    shape = RoundedCornerShape(32.dp)
+                    shape = RoundedCornerShape(26.dp)
                 )
-                .drawBehind {
-                    // Top glass specular reflection
-                    drawLine(
-                        brush = Brush.horizontalGradient(
-                            listOf(Color.Transparent, Color(0x60FFFFFF), Color(0x8038BDF8), Color.Transparent)
-                        ),
-                        start = Offset(size.width * 0.15f, 1f),
-                        end = Offset(size.width * 0.85f, 1f),
-                        strokeWidth = 1.5f
-                    )
-                }
-                .padding(horizontal = 8.dp, vertical = 8.dp)
+                .padding(horizontal = 4.dp, vertical = 6.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -498,12 +523,6 @@ fun <T> FloatingLiquidGlassNavBar(
                     val (selectedIcon, unselectedIcon) = getItemIcons(item)
                     val label = getItemLabel(item)
 
-                    val activeGlowAlpha by animateFloatAsState(
-                        targetValue = if (isSelected) 1f else 0f,
-                        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
-                        label = "active_glow"
-                    )
-
                     val iconTint by animateColorAsState(
                         targetValue = if (isSelected) {
                             if (isDark) LiquidMint else Color(0xFF0D9488)
@@ -511,14 +530,14 @@ fun <T> FloatingLiquidGlassNavBar(
                             if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
                         },
                         animationSpec = tween(durationMillis = 200),
-                        label = "icon_tint"
+                        label = "tab_icon_tint"
                     )
 
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .height(52.dp)
-                            .clip(RoundedCornerShape(24.dp))
+                            .clip(RoundedCornerShape(18.dp))
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = ripple(color = if (isDark) LiquidMint else Color(0xFF0D9488)),
@@ -527,52 +546,9 @@ fun <T> FloatingLiquidGlassNavBar(
                             .testTag("nav_tab_${label.lowercase()}"),
                         contentAlignment = Alignment.Center
                     ) {
-                        // Liquid glowing active pill
-                        if (activeGlowAlpha > 0.01f) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 4.dp, vertical = 4.dp)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            if (isDark) {
-                                                listOf(
-                                                    Color(0xFF0D9488).copy(alpha = 0.35f * activeGlowAlpha),
-                                                    Color(0xFF10B981).copy(alpha = 0.25f * activeGlowAlpha)
-                                                )
-                                            } else {
-                                                listOf(
-                                                    Color(0xFFCCFBF1).copy(alpha = 0.8f * activeGlowAlpha),
-                                                    Color(0xFFA7F3D0).copy(alpha = 0.6f * activeGlowAlpha)
-                                                )
-                                            }
-                                        )
-                                    )
-                                    .border(
-                                        width = 1.dp,
-                                        brush = Brush.verticalGradient(
-                                            if (isDark) {
-                                                listOf(
-                                                    LiquidMint.copy(alpha = 0.6f * activeGlowAlpha),
-                                                    Color.Transparent
-                                                )
-                                            } else {
-                                                listOf(
-                                                    Color(0xFF0D9488).copy(alpha = 0.5f * activeGlowAlpha),
-                                                    Color.Transparent
-                                                )
-                                            }
-                                        ),
-                                        shape = RoundedCornerShape(20.dp)
-                                    )
-                            )
-                        }
-
-                        // Icon and Label
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Icon(
                                 imageVector = if (isSelected) selectedIcon else unselectedIcon,
@@ -580,16 +556,18 @@ fun <T> FloatingLiquidGlassNavBar(
                                 tint = iconTint,
                                 modifier = Modifier.size(20.dp)
                             )
-                            if (isSelected) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = label,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0F172A),
-                                    maxLines = 1
-                                )
-                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = label,
+                                fontSize = 10.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) {
+                                    if (isDark) LiquidMint else Color(0xFF0D9488)
+                                } else {
+                                    if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                                },
+                                maxLines = 1
+                            )
                         }
                     }
                 }

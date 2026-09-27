@@ -7,6 +7,7 @@ import com.example.data.model.AllocationWithSplits
 import com.example.data.model.AppSettingEntity
 import com.example.data.model.CategoryEntity
 import com.example.data.model.CategorySummary
+import com.example.data.model.CurrencyPair
 import com.example.data.model.ExpenseEntity
 import com.example.data.model.GoalEntity
 import com.example.data.model.GoalProgress
@@ -104,6 +105,21 @@ class MoneyRepository(private val database: AppDatabase) {
                     )
                 )
             )
+        } else {
+            // Self-healing: if duplicated categories exist from previous race conditions, deduplicate them
+            val seenNames = mutableSetOf<String>()
+            val duplicatesToRemove = mutableListOf<CategoryEntity>()
+            for (cat in existing) {
+                val normalized = cat.name.trim().lowercase()
+                if (seenNames.contains(normalized)) {
+                    duplicatesToRemove.add(cat)
+                } else {
+                    seenNames.add(normalized)
+                }
+            }
+            for (dup in duplicatesToRemove) {
+                categoryDao.deleteCategory(dup)
+            }
         }
     }
 
@@ -225,7 +241,11 @@ class MoneyRepository(private val database: AppDatabase) {
         amount: Double,
         note: String = ""
     ): Pair<AllocationEntity, List<AllocationSplitEntity>> = withContext(Dispatchers.IO) {
-        val cats = categoryDao.getCategoriesList()
+        var cats = categoryDao.getCategoriesList()
+        if (cats.isEmpty()) {
+            ensureDefaultDataLoaded()
+            cats = categoryDao.getCategoriesList()
+        }
         val previews = calculateSplits(amount, cats)
 
         val allocation = AllocationEntity(
@@ -409,5 +429,71 @@ class MoneyRepository(private val database: AppDatabase) {
         }
 
         sb.toString()
+    }
+
+    // FOREX / CURRENCY CONVERTER
+    val defaultCurrencyPairs = listOf(
+        CurrencyPair(
+            id = "USD_BWP",
+            baseCode = "USD",
+            baseSymbol = "$",
+            targetCode = "BWP",
+            targetSymbol = "P",
+            defaultRate = 14.0 // User example: "if 1 usd is 14 pula he can set it for example if he wants it to be 15"
+        ),
+        CurrencyPair(
+            id = "ZAR_BWP",
+            baseCode = "ZAR",
+            baseSymbol = "R",
+            targetCode = "BWP",
+            targetSymbol = "P",
+            defaultRate = 0.75
+        ),
+        CurrencyPair(
+            id = "EUR_BWP",
+            baseCode = "EUR",
+            baseSymbol = "€",
+            targetCode = "BWP",
+            targetSymbol = "P",
+            defaultRate = 15.20
+        ),
+        CurrencyPair(
+            id = "GBP_BWP",
+            baseCode = "GBP",
+            baseSymbol = "£",
+            targetCode = "BWP",
+            targetSymbol = "P",
+            defaultRate = 17.80
+        ),
+        CurrencyPair(
+            id = "USD_ZAR",
+            baseCode = "USD",
+            baseSymbol = "$",
+            targetCode = "ZAR",
+            targetSymbol = "R",
+            defaultRate = 18.50
+        ),
+        CurrencyPair(
+            id = "USD_ZWL",
+            baseCode = "USD",
+            baseSymbol = "$",
+            targetCode = "ZWL",
+            targetSymbol = "$",
+            defaultRate = 26.50
+        )
+    )
+
+    fun getForexRate(pairId: String, defaultRate: Double): Flow<Double> =
+        settingsDao.getSetting("forex_rate_$pairId").map { value ->
+            value?.toDoubleOrNull() ?: defaultRate
+        }
+
+    suspend fun setForexRate(pairId: String, rate: Double) = withContext(Dispatchers.IO) {
+        settingsDao.setSetting(AppSettingEntity(key = "forex_rate_$pairId", value = rate.toString()))
+    }
+
+    suspend fun getSavedForexRate(pairId: String, defaultRate: Double): Double = withContext(Dispatchers.IO) {
+        val value = settingsDao.getSettingValue("forex_rate_$pairId")
+        value?.toDoubleOrNull() ?: defaultRate
     }
 }

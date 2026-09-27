@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.CategoryEntity
 import com.example.data.model.CategorySummary
+import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.viewmodel.AllocationSuccessEvent
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
@@ -84,23 +85,43 @@ fun parseColorSafe(hex: String, fallback: Color = Color(0xFF10B981)): Color {
     }
 }
 
+fun getAccessibleTextColor(color: Color, isDark: Boolean): Color {
+    if (isDark) return color
+    // In light mode, ensure text color has sufficient contrast (> 4.5:1 against #FFFFFF)
+    val luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
+    return if (luminance > 0.42) {
+        Color(
+            red = (color.red * 0.55f).coerceIn(0f, 1f),
+            green = (color.green * 0.55f).coerceIn(0f, 1f),
+            blue = (color.blue * 0.55f).coerceIn(0f, 1f),
+            alpha = 1f
+        )
+    } else {
+        color
+    }
+}
+
 @Composable
 fun AllocationSuccessDialog(
     event: AllocationSuccessEvent,
     onDismiss: () -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
+    val containerBg = if (isDark) Color(0xFF141920) else Color(0xFFFFFFFF)
+    val mintAccent = if (isDark) LiquidMint else Color(0xFF047857)
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xF20B1A22),
+        containerColor = containerBg,
         modifier = Modifier
             .border(
-                1.2.dp,
-                Brush.verticalGradient(
-                    listOf(Color(0x80FFFFFF), Color(0x3010B981), Color(0x15FFFFFF))
-                ),
-                RoundedCornerShape(24.dp)
+                1.dp,
+                if (isDark) Color(0x33FFFFFF) else Color(0x18000000),
+                RoundedCornerShape(22.dp)
             )
-            .shadow(20.dp, RoundedCornerShape(24.dp), ambientColor = Color(0x8010B981)),
+            .shadow(if (isDark) 16.dp else 8.dp, RoundedCornerShape(22.dp)),
         confirmButton = {
             Button(
                 onClick = onDismiss,
@@ -108,13 +129,13 @@ fun AllocationSuccessDialog(
                     .fillMaxWidth()
                     .testTag("allocation_done_button"),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = LiquidEmerald
+                    containerColor = if (isDark) LiquidTeal else Color(0xFF0D9488)
                 ),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     text = "Done",
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
@@ -128,14 +149,14 @@ fun AllocationSuccessDialog(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = LiquidMint,
-                    modifier = Modifier.size(28.dp)
+                    tint = mintAccent,
+                    modifier = Modifier.size(26.dp)
                 )
                 Text(
                     text = "Money Allocated!",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
-                    color = Color(0xFFF8FAFC)
+                    fontSize = 19.sp,
+                    color = textColorPrimary
                 )
             }
         },
@@ -146,21 +167,21 @@ fun AllocationSuccessDialog(
                     .padding(top = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Glass total card
+                // Total Received Card
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .background(
-                            Brush.verticalGradient(
-                                listOf(Color(0x3810B981), Color(0x150D9488))
-                            )
+                            if (isDark) {
+                                Brush.verticalGradient(listOf(Color(0x3510B981), Color(0x120D9488)))
+                            } else {
+                                Brush.verticalGradient(listOf(Color(0xFFE6FFFA), Color(0xFFCCFBF1)))
+                            }
                         )
                         .border(
                             1.dp,
-                            Brush.verticalGradient(
-                                listOf(Color(0x8034D399), Color(0x2034D399))
-                            ),
+                            if (isDark) Color(0x4034D399) else Color(0x600D9488),
                             RoundedCornerShape(16.dp)
                         )
                         .padding(16.dp)
@@ -169,21 +190,21 @@ fun AllocationSuccessDialog(
                         Text(
                             text = "TOTAL RECEIVED",
                             fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = LiquidMint
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDark) LiquidMint else Color(0xFF0F766E)
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = formatCurrency(event.allocation.totalAmount, event.currency),
-                            fontSize = 30.sp,
+                            fontSize = 28.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFFF8FAFC)
+                            color = textColorPrimary
                         )
                         if (event.allocation.note.isNotBlank()) {
                             Text(
                                 text = "Note: ${event.allocation.note}",
                                 fontSize = 12.sp,
-                                color = Color(0xFF94A3B8),
+                                color = textColorSecondary,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
@@ -192,9 +213,9 @@ fun AllocationSuccessDialog(
 
                 Text(
                     text = "Divided Into Preset Categories:",
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF94A3B8)
+                    color = textColorSecondary
                 )
 
                 Column(
@@ -205,12 +226,12 @@ fun AllocationSuccessDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0x25FFFFFF))
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isDark) Color(0x20FFFFFF) else Color(0xFFF8FAFC))
                                 .border(
-                                    1.dp,
-                                    Color(0x33FFFFFF),
-                                    RoundedCornerShape(10.dp)
+                                    0.8.dp,
+                                    if (isDark) Color(0x28FFFFFF) else Color(0x18000000),
+                                    RoundedCornerShape(12.dp)
                                 )
                                 .padding(horizontal = 14.dp, vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -220,27 +241,27 @@ fun AllocationSuccessDialog(
                                 Text(
                                     text = split.categoryName,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = Color(0xFFF8FAFC)
+                                    fontSize = 13.sp,
+                                    color = textColorPrimary
                                 )
                                 Text(
                                     text = "${split.percentage.toInt()}% allocation",
                                     fontSize = 11.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = textColorSecondary
                                 )
                             }
                             Text(
                                 text = formatCurrency(split.amount, event.currency),
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 16.sp,
-                                color = LiquidMint
+                                fontSize = 15.sp,
+                                color = if (isDark) LiquidMint else Color(0xFF047857)
                             )
                         }
                     }
                 }
             }
         },
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(22.dp)
     )
 }
 
@@ -255,24 +276,29 @@ fun RecordExpenseDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
     val categoryColor = parseColorSafe(category.colorHex)
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
+    val containerBg = if (isDark) Color(0xFF141920) else Color(0xFFFFFFFF)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xF20B1A22),
+        containerColor = containerBg,
         modifier = Modifier
             .border(
-                1.2.dp,
-                Brush.verticalGradient(
-                    listOf(Color(0x80FFFFFF), categoryColor.copy(alpha = 0.35f), Color(0x15FFFFFF))
-                ),
-                RoundedCornerShape(24.dp)
-            ),
+                1.dp,
+                if (isDark) Color(0x33FFFFFF) else Color(0x18000000),
+                RoundedCornerShape(22.dp)
+            )
+            .shadow(if (isDark) 16.dp else 8.dp, RoundedCornerShape(22.dp)),
         confirmButton = {
             Button(
                 onClick = onConfirm,
                 enabled = (amount.toDoubleOrNull() ?: 0.0) > 0.0,
-                colors = ButtonDefaults.buttonColors(containerColor = LiquidRose),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) LiquidRose else Color(0xFFDC2626)
+                ),
                 modifier = Modifier.testTag("confirm_expense_button"),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -288,7 +314,7 @@ fun RecordExpenseDialog(
                 onClick = onDismiss,
                 modifier = Modifier.testTag("cancel_expense_button")
             ) {
-                Text("Cancel", color = Color(0xFF94A3B8))
+                Text("Cancel", color = textColorSecondary)
             }
         },
         title = {
@@ -306,7 +332,7 @@ fun RecordExpenseDialog(
                     text = "Spend from ${category.name}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = Color(0xFFF8FAFC)
+                    color = textColorPrimary
                 )
             }
         },
@@ -320,8 +346,8 @@ fun RecordExpenseDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0x20FFFFFF))
-                        .border(1.dp, Color(0x30FFFFFF), RoundedCornerShape(12.dp))
+                        .background(if (isDark) Color(0x20FFFFFF) else Color(0xFFF1F5F9))
+                        .border(1.dp, if (isDark) Color(0x30FFFFFF) else Color(0x18000000), RoundedCornerShape(12.dp))
                         .padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -329,13 +355,13 @@ fun RecordExpenseDialog(
                     Text(
                         text = "Current Available Balance:",
                         fontSize = 12.sp,
-                        color = Color(0xFF94A3B8)
+                        color = textColorSecondary
                     )
                     Text(
                         text = formatCurrency(category.currentBalance, currency),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
-                        color = Color(0xFFF8FAFC)
+                        color = textColorPrimary
                     )
                 }
 
@@ -343,8 +369,8 @@ fun RecordExpenseDialog(
                     value = amount,
                     onValueChange = onAmountChange,
                     label = { Text("Amount Spent ($currency)") },
-                    placeholder = { Text("e.g. 250") },
-                    prefix = { Text(currency, fontWeight = FontWeight.Bold, color = LiquidMint) },
+                    placeholder = { Text("e.g. 250", color = textColorSecondary.copy(alpha = 0.6f)) },
+                    prefix = { Text(currency, fontWeight = FontWeight.Bold, color = if (isDark) LiquidMint else Color(0xFF0F766E)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
@@ -352,8 +378,10 @@ fun RecordExpenseDialog(
                         .testTag("expense_amount_input"),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = LiquidMint,
-                        unfocusedBorderColor = Color(0x33FFFFFF)
+                        focusedTextColor = textColorPrimary,
+                        unfocusedTextColor = textColorPrimary,
+                        focusedBorderColor = if (isDark) LiquidMint else Color(0xFF0D9488),
+                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x20000000)
                     )
                 )
 
@@ -361,20 +389,22 @@ fun RecordExpenseDialog(
                     value = description,
                     onValueChange = onDescriptionChange,
                     label = { Text("What did you buy? (Optional)") },
-                    placeholder = { Text("e.g. Bought multimeter") },
+                    placeholder = { Text("e.g. Bought multimeter", color = textColorSecondary.copy(alpha = 0.6f)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("expense_desc_input"),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = LiquidMint,
-                        unfocusedBorderColor = Color(0x33FFFFFF)
+                        focusedTextColor = textColorPrimary,
+                        unfocusedTextColor = textColorPrimary,
+                        focusedBorderColor = if (isDark) LiquidMint else Color(0xFF0D9488),
+                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x20000000)
                     )
                 )
             }
         },
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(22.dp)
     )
 }
 
@@ -391,23 +421,27 @@ fun AddGoalDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
+    val containerBg = if (isDark) Color(0xFF141920) else Color(0xFFFFFFFF)
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xF20B1A22),
+        containerColor = containerBg,
         modifier = Modifier
             .border(
-                1.2.dp,
-                Brush.verticalGradient(
-                    listOf(Color(0x80FFFFFF), Color(0x3038BDF8), Color(0x15FFFFFF))
-                ),
-                RoundedCornerShape(24.dp)
-            ),
+                1.dp,
+                if (isDark) Color(0x33FFFFFF) else Color(0x18000000),
+                RoundedCornerShape(22.dp)
+            )
+            .shadow(if (isDark) 16.dp else 8.dp, RoundedCornerShape(22.dp)),
         confirmButton = {
             Button(
                 onClick = onConfirm,
                 enabled = title.isNotBlank() && (target.toDoubleOrNull() ?: 0.0) > 0.0,
                 modifier = Modifier.testTag("save_goal_button"),
-                colors = ButtonDefaults.buttonColors(containerColor = LiquidCyan),
+                colors = ButtonDefaults.buttonColors(containerColor = if (isDark) LiquidCyan else Color(0xFF0284C7)),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Create Goal", fontWeight = FontWeight.Bold, color = Color.White)
@@ -415,7 +449,7 @@ fun AddGoalDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Color(0xFF94A3B8))
+                Text("Cancel", color = textColorSecondary)
             }
         },
         title = {
@@ -426,13 +460,13 @@ fun AddGoalDialog(
                 Icon(
                     imageVector = Icons.Default.Flag,
                     contentDescription = null,
-                    tint = LiquidCyan
+                    tint = if (isDark) LiquidCyan else Color(0xFF0284C7)
                 )
                 Text(
                     text = "Create Financial Goal",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = Color(0xFFF8FAFC)
+                    color = textColorPrimary
                 )
             }
         },
@@ -445,15 +479,17 @@ fun AddGoalDialog(
                     value = title,
                     onValueChange = onTitleChange,
                     label = { Text("Goal Name") },
-                    placeholder = { Text("e.g. Zimbabwe Business Capital") },
+                    placeholder = { Text("e.g. Zimbabwe Business Capital", color = textColorSecondary.copy(alpha = 0.6f)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("goal_title_input"),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = LiquidCyan,
-                        unfocusedBorderColor = Color(0x33FFFFFF)
+                        focusedTextColor = textColorPrimary,
+                        unfocusedTextColor = textColorPrimary,
+                        focusedBorderColor = if (isDark) LiquidCyan else Color(0xFF0284C7),
+                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x20000000)
                     )
                 )
 
@@ -461,8 +497,8 @@ fun AddGoalDialog(
                     value = target,
                     onValueChange = onTargetChange,
                     label = { Text("Target Amount ($currency)") },
-                    placeholder = { Text("e.g. 10000") },
-                    prefix = { Text(currency, fontWeight = FontWeight.Bold, color = LiquidCyan) },
+                    placeholder = { Text("e.g. 10000", color = textColorSecondary.copy(alpha = 0.6f)) },
+                    prefix = { Text(currency, fontWeight = FontWeight.Bold, color = if (isDark) LiquidCyan else Color(0xFF0284C7)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
@@ -470,16 +506,18 @@ fun AddGoalDialog(
                         .testTag("goal_target_input"),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = LiquidCyan,
-                        unfocusedBorderColor = Color(0x33FFFFFF)
+                        focusedTextColor = textColorPrimary,
+                        unfocusedTextColor = textColorPrimary,
+                        focusedBorderColor = if (isDark) LiquidCyan else Color(0xFF0284C7),
+                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x20000000)
                     )
                 )
 
                 Text(
-                    text = "Link to Category (tracks accumulated balance):",
+                    text = "Link to Category (tracks balance automatically):",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF94A3B8)
+                    color = textColorSecondary
                 )
 
                 Column(
@@ -493,12 +531,18 @@ fun AddGoalDialog(
                             onClick = { onCategorySelect(cat.id) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (isSelected) catColor.copy(alpha = 0.22f) else Color(0x18FFFFFF)
+                                containerColor = if (isSelected) {
+                                    catColor.copy(alpha = if (isDark) 0.25f else 0.12f)
+                                } else {
+                                    if (isDark) Color(0x18FFFFFF) else Color(0xFFF8FAFC)
+                                }
                             ),
-                            border = ButtonDefaults.outlinedButtonBorder.copy(
-                                brush = Brush.horizontalGradient(
-                                    if (isSelected) listOf(catColor, catColor.copy(alpha = 0.5f))
-                                    else listOf(Color(0x33FFFFFF), Color(0x15FFFFFF))
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                Brush.horizontalGradient(
+                                    if (isSelected) listOf(catColor, catColor.copy(alpha = 0.7f))
+                                    else if (isDark) listOf(Color(0x33FFFFFF), Color(0x15FFFFFF))
+                                    else listOf(Color(0x18000000), Color(0x0C000000))
                                 )
                             ),
                             shape = RoundedCornerShape(10.dp)
@@ -511,12 +555,17 @@ fun AddGoalDialog(
                                 Text(
                                     text = cat.name,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) Color(0xFFF8FAFC) else Color(0xFFE2E8F0)
+                                    color = if (isSelected) {
+                                        if (isDark) Color(0xFFF8FAFC) else Color(0xFF0F172A)
+                                    } else {
+                                        textColorSecondary
+                                    }
                                 )
                                 Text(
                                     text = "${cat.percentage.toInt()}%",
                                     fontSize = 12.sp,
-                                    color = if (isSelected) catColor else Color(0xFF94A3B8)
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) catColor else textColorSecondary
                                 )
                             }
                         }
@@ -524,6 +573,6 @@ fun AddGoalDialog(
                 }
             }
         },
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(22.dp)
     )
 }

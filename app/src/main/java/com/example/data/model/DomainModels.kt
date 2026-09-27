@@ -36,3 +36,24 @@ data class SplitPreview(
     val amount: Double,
     val colorHex: String
 )
+
+/**
+ * Currency pair for Forex trading / currency conversion.
+ * Allows user to set their custom exchange rate (e.g. 1 USD = 15.00 Pula BWP).
+ */
+data class CurrencyPair(
+    val id: String,           // e.g. "USD_BWP"
+    val baseCode: String,     // e.g. "USD"
+    val baseSymbol: String,   // e.g. "$"
+    val targetCode: String,   // e.g. "BWP"
+    val targetSymbol: String, // e.g. "P"
+    val defaultRate: Double,  // e.g. 14.0
+    val isCustom: Boolean = false
+)
+
+data class ForexConversionResult(
+    val baseAmount: Double,
+    val targetAmount: Double,
+    val rate: Double,
+    val pair: CurrencyPair
+)

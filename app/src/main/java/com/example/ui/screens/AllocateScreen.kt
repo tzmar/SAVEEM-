@@ -31,12 +31,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.CurrencyExchange
 import androidx.compose.material.icons.filled.PieChart
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -48,8 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -71,7 +67,9 @@ import com.example.ui.components.LiquidGlassCard
 import com.example.ui.components.LiquidGlassPill
 import com.example.ui.components.LiquidMint
 import com.example.ui.components.LiquidTeal
+import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.components.formatCurrency
+import com.example.ui.components.getAccessibleTextColor
 import com.example.ui.components.parseColorSafe
 import com.example.ui.viewmodel.MoneyViewModel
 
@@ -79,8 +77,10 @@ import com.example.ui.viewmodel.MoneyViewModel
 @Composable
 fun AllocateScreen(
     viewModel: MoneyViewModel,
+    onOpenForexClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val isDark = LocalIsDarkTheme.current
     val currency by viewModel.currencySymbol.collectAsStateWithLifecycle()
     val amountInput by viewModel.amountInput.collectAsStateWithLifecycle()
     val noteInput by viewModel.noteInput.collectAsStateWithLifecycle()
@@ -93,6 +93,9 @@ fun AllocateScreen(
 
     val numericAmount = amountInput.toDoubleOrNull() ?: 0.0
     val isReadyToAllocate = numericAmount > 0.0
+
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
 
     // Show celebration dialog if allocation succeeded
     successEvent?.let { event ->
@@ -128,18 +131,18 @@ fun AllocateScreen(
                             .background(LiquidMint)
                     )
                     Text(
-                        text = "LIQUID ALLOCATOR",
+                        text = "ALLOCATOR",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.2.sp,
-                        color = LiquidMint
+                        color = if (isDark) LiquidMint else Color(0xFF0D9488)
                     )
                 }
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Split Every Dollar Intentionally",
+                    text = "Split irregular income automatically",
                     fontSize = 14.sp,
-                    color = Color(0xFF94A3B8)
+                    color = textColorSecondary
                 )
             }
 
@@ -152,7 +155,7 @@ fun AllocateScreen(
         // Core Hero Card: "How much did you receive?"
         LiquidGlassCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(24.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -162,9 +165,9 @@ fun AllocateScreen(
             ) {
                 Text(
                     text = "How much did you receive?",
-                    fontSize = 21.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFF8FAFC),
+                    color = textColorPrimary,
                     textAlign = TextAlign.Center
                 )
 
@@ -176,12 +179,11 @@ fun AllocateScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
                         .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color(0x35000000),
-                                    Color(0x20000000)
-                                )
-                            )
+                            if (isDark) {
+                                Brush.verticalGradient(listOf(Color(0x35000000), Color(0x20000000)))
+                            } else {
+                                Brush.verticalGradient(listOf(Color(0x0F0F172A), Color(0x080F172A)))
+                            }
                         )
                         .border(
                             width = 1.5.dp,
@@ -189,7 +191,8 @@ fun AllocateScreen(
                                 if (isReadyToAllocate) {
                                     listOf(LiquidMint, LiquidCyan.copy(alpha = 0.5f), Color(0x33FFFFFF))
                                 } else {
-                                    listOf(Color(0x4DFFFFFF), Color(0x1AFFFFFF))
+                                    if (isDark) listOf(Color(0x4DFFFFFF), Color(0x1AFFFFFF))
+                                    else listOf(Color(0x200F172A), Color(0x100F172A))
                                 }
                             ),
                             shape = RoundedCornerShape(20.dp)
@@ -206,7 +209,7 @@ fun AllocateScreen(
                             text = currency,
                             fontSize = 38.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = LiquidMint
+                            color = if (isDark) LiquidMint else Color(0xFF0D9488)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
 
@@ -217,18 +220,18 @@ fun AllocateScreen(
                             if (amountInput.isEmpty()) {
                                 Text(
                                     text = "0",
-                                    fontSize = 42.sp,
+                                    fontSize = 40.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0x4D94A3B8)
+                                    color = textColorSecondary.copy(alpha = 0.5f)
                                 )
                             }
                             BasicTextField(
                                 value = amountInput,
                                 onValueChange = viewModel::onAmountChanged,
                                 textStyle = TextStyle(
-                                    fontSize = 42.sp,
+                                    fontSize = 40.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFF8FAFC)
+                                    color = textColorPrimary
                                 ),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(
@@ -236,7 +239,7 @@ fun AllocateScreen(
                                     imeAction = ImeAction.Done
                                 ),
                                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                                cursorBrush = SolidColor(LiquidMint),
+                                cursorBrush = SolidColor(if (isDark) LiquidMint else Color(0xFF0D9488)),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("amount_input_field")
@@ -251,7 +254,7 @@ fun AllocateScreen(
                                 Icon(
                                     imageVector = Icons.Default.Clear,
                                     contentDescription = "Clear amount",
-                                    tint = Color(0xFF94A3B8)
+                                    tint = textColorSecondary
                                 )
                             }
                         }
@@ -260,13 +263,51 @@ fun AllocateScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Small-income friendly quick-tap presets
-                Text(
-                    text = "Quick amounts:",
-                    fontSize = 12.sp,
-                    color = Color(0xFF94A3B8),
-                    modifier = Modifier.align(Alignment.Start)
-                )
+                // Small-income friendly quick-tap presets & Forex converter shortcut
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Quick amounts:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = textColorSecondary
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isDark) Color(0x2806B6D4) else Color(0xFFE0F2FE))
+                            .border(
+                                0.8.dp,
+                                if (isDark) Color(0x6006B6D4) else Color(0xFF0284C7),
+                                RoundedCornerShape(10.dp)
+                            )
+                            .clickable { onOpenForexClick() }
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .testTag("open_forex_pill")
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CurrencyExchange,
+                                contentDescription = null,
+                                tint = if (isDark) LiquidCyan else Color(0xFF0284C7),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "Convert USD/Forex",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDark) LiquidCyan else Color(0xFF0284C7)
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -287,16 +328,19 @@ fun AllocateScreen(
                                             listOf(Color(0xFF0D9488), Color(0xFF10B981))
                                         )
                                     } else {
-                                        Brush.verticalGradient(
-                                            listOf(Color(0x2EFFFFFF), Color(0x14FFFFFF))
-                                        )
+                                        if (isDark) {
+                                            Brush.verticalGradient(listOf(Color(0x2EFFFFFF), Color(0x14FFFFFF)))
+                                        } else {
+                                            Brush.verticalGradient(listOf(Color(0x0D0F172A), Color(0x050F172A)))
+                                        }
                                     }
                                 )
                                 .border(
                                     width = 1.dp,
                                     brush = Brush.verticalGradient(
                                         if (isSelected) listOf(Color(0xCCFFFFFF), Color(0x66FFFFFF))
-                                        else listOf(Color(0x33FFFFFF), Color(0x14FFFFFF))
+                                        else if (isDark) listOf(Color(0x33FFFFFF), Color(0x14FFFFFF))
+                                        else listOf(Color(0x150F172A), Color(0x0A0F172A))
                                     ),
                                     shape = RoundedCornerShape(14.dp)
                                 )
@@ -311,7 +355,7 @@ fun AllocateScreen(
                                 text = "$currency${preset.toInt()}",
                                 fontSize = 13.sp,
                                 fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else Color(0xFFE2E8F0)
+                                color = if (isSelected) Color.White else textColorPrimary
                             )
                         }
                     }
@@ -324,7 +368,7 @@ fun AllocateScreen(
                         text = "+ Add optional note (e.g. Freelance project)",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = LiquidCyan,
+                        color = if (isDark) LiquidCyan else Color(0xFF0284C7),
                         modifier = Modifier
                             .clickable { showNoteField = true }
                             .padding(vertical = 4.dp)
@@ -339,7 +383,7 @@ fun AllocateScreen(
                     OutlinedTextField(
                         value = noteInput,
                         onValueChange = viewModel::onNoteChanged,
-                        placeholder = { Text("Income source / note (optional)", fontSize = 13.sp, color = Color(0xFF64748B)) },
+                        placeholder = { Text("Income source / note (optional)", fontSize = 13.sp, color = textColorSecondary) },
                         singleLine = true,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
@@ -347,10 +391,10 @@ fun AllocateScreen(
                             .padding(top = 8.dp)
                             .testTag("income_note_input"),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = LiquidCyan,
-                            unfocusedBorderColor = Color(0x33FFFFFF),
-                            focusedTextColor = Color(0xFFF8FAFC),
-                            unfocusedTextColor = Color(0xFFF8FAFC)
+                            focusedBorderColor = if (isDark) LiquidCyan else Color(0xFF0284C7),
+                            unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x200F172A),
+                            focusedTextColor = textColorPrimary,
+                            unfocusedTextColor = textColorPrimary
                         )
                     )
                 }
@@ -360,7 +404,7 @@ fun AllocateScreen(
         // Live Preset Allocation Split Breakdown
         LiquidGlassCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp)
+            shape = RoundedCornerShape(22.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -381,13 +425,13 @@ fun AllocateScreen(
                             modifier = Modifier
                                 .size(30.dp)
                                 .clip(CircleShape)
-                                .background(LiquidTeal.copy(alpha = 0.25f)),
+                                .background(if (isDark) LiquidTeal.copy(alpha = 0.25f) else Color(0x200D9488)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PieChart,
                                 contentDescription = null,
-                                tint = LiquidMint,
+                                tint = if (isDark) LiquidMint else Color(0xFF0D9488),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -395,7 +439,7 @@ fun AllocateScreen(
                             text = "Automatic Category Split",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = Color(0xFFF8FAFC)
+                            color = textColorPrimary
                         )
                     }
 
@@ -412,7 +456,7 @@ fun AllocateScreen(
                         "Your preset percentage allocation rules:"
                     },
                     fontSize = 12.sp,
-                    color = Color(0xFF94A3B8)
+                    color = textColorSecondary
                 )
 
                 // List of split rows
@@ -438,7 +482,7 @@ fun AllocateScreen(
                             CategorySplitRow(
                                 name = cat.name,
                                 percentage = cat.percentage,
-                                amountText = "P${exampleSplit.toInt()} per P100",
+                                amountText = "${currency}${exampleSplit.toInt()} per ${currency}100",
                                 color = catColor,
                                 isHighlighted = false
                             )
@@ -457,7 +501,7 @@ fun AllocateScreen(
             enabled = isReadyToAllocate,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
+                .height(58.dp)
                 .testTag("allocate_money_button"),
             gradientColors = listOf(Color(0xFF0EA5E9), Color(0xFF10B981), Color(0xFF34D399))
         ) {
@@ -470,7 +514,7 @@ fun AllocateScreen(
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = if (isReadyToAllocate) "Allocate $currency$amountInput Now" else "Allocate Money",
-                fontSize = 17.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
@@ -488,6 +532,10 @@ fun CategorySplitRow(
     color: Color,
     isHighlighted: Boolean
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0F172A)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -498,9 +546,11 @@ fun CategorySplitRow(
                         listOf(color.copy(alpha = 0.20f), color.copy(alpha = 0.05f))
                     )
                 } else {
-                    Brush.verticalGradient(
-                        listOf(Color(0x22FFFFFF), Color(0x0EFFFFFF))
-                    )
+                    if (isDark) {
+                        Brush.verticalGradient(listOf(Color(0x22FFFFFF), Color(0x0EFFFFFF)))
+                    } else {
+                        Brush.verticalGradient(listOf(Color(0x0A0F172A), Color(0x040F172A)))
+                    }
                 }
             )
             .border(
@@ -509,7 +559,8 @@ fun CategorySplitRow(
                     if (isHighlighted) {
                         listOf(color.copy(alpha = 0.6f), color.copy(alpha = 0.15f))
                     } else {
-                        listOf(Color(0x2BFFFFFF), Color(0x10FFFFFF))
+                        if (isDark) listOf(Color(0x2BFFFFFF), Color(0x10FFFFFF))
+                        else listOf(Color(0x120F172A), Color(0x080F172A))
                     }
                 ),
                 shape = RoundedCornerShape(16.dp)
@@ -531,28 +582,34 @@ fun CategorySplitRow(
                         .size(12.dp)
                         .clip(CircleShape)
                         .background(color)
-                        .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+                        .border(1.dp, if (isDark) Color.White.copy(alpha = 0.6f) else Color(0x330F172A), CircleShape)
                 )
                 Column {
                     Text(
                         text = name,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF8FAFC)
+                        color = textColorPrimary
                     )
                     Text(
                         text = "${percentage.toInt()}% of income",
                         fontSize = 11.sp,
-                        color = Color(0xFF94A3B8)
+                        color = textColorSecondary
                     )
                 }
             }
 
+            val displayAmountColor = if (isHighlighted) {
+                getAccessibleTextColor(color, isDark)
+            } else {
+                textColorSecondary
+            }
+
             Text(
                 text = amountText,
-                fontSize = if (isHighlighted) 17.sp else 13.sp,
+                fontSize = if (isHighlighted) 16.sp else 13.sp,
                 fontWeight = if (isHighlighted) FontWeight.ExtraBold else FontWeight.SemiBold,
-                color = if (isHighlighted) color else Color(0xFF94A3B8)
+                color = displayAmountColor
             )
         }
     }

@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.Color
 
 val LocalIsDarkTheme = staticCompositionLocalOf { true }
 
-private val LiquidDarkColorScheme = darkColorScheme(
+private val AppleDarkColorScheme = darkColorScheme(
     primary = LiquidTealPrimary,
     onPrimary = LiquidTealOnPrimary,
     primaryContainer = LiquidTealContainer,
@@ -31,16 +31,16 @@ private val LiquidDarkColorScheme = darkColorScheme(
     error = LiquidRoseAccent
 )
 
-private val LiquidLightColorScheme = lightColorScheme(
-    primary = Color(0xFF0D9488),
+private val AppleLightColorScheme = lightColorScheme(
+    primary = AppleTealLight,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFCCFBF1),
     onPrimaryContainer = Color(0xFF115E59),
-    secondary = Color(0xFF0284C7),
+    secondary = AppleBlueLight,
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFE0F2FE),
     onSecondaryContainer = Color(0xFF075985),
-    tertiary = Color(0xFF4F46E5),
+    tertiary = AppleIndigoLight,
     background = LiquidLightBackground,
     surface = LiquidLightSurface,
     surfaceVariant = LiquidLightSurfaceVariant,
@@ -48,7 +48,7 @@ private val LiquidLightColorScheme = lightColorScheme(
     onSurface = LiquidLightTextPrimary,
     onSurfaceVariant = LiquidLightTextSecondary,
     outline = LiquidLightOutline,
-    error = Color(0xFFE11D48)
+    error = AppleRoseLight
 )
 
 @Composable
@@ -63,7 +63,7 @@ fun MyApplicationTheme(
         AppThemeMode.SYSTEM -> systemDark
     }
 
-    val colorScheme = if (isDark) LiquidDarkColorScheme else LiquidLightColorScheme
+    val colorScheme = if (isDark) AppleDarkColorScheme else AppleLightColorScheme
 
     CompositionLocalProvider(LocalIsDarkTheme provides isDark) {
         MaterialTheme(
