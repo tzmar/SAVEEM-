@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import com.example.ui.theme.LocalIsDarkTheme
+import com.example.ui.theme.getAdaptiveAccent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -174,7 +175,7 @@ fun LiquidGlassBackground(
 
 /**
  * Apple-style Inset Grouped / Liquid Glass Card.
- * In Light Mode: Pure white card with crisp 0.8dp outline and subtle shadow (100% visible words).
+ * In Light Mode: Pure white card with crisp outline and subtle shadow (100% visible words).
  * In Dark Mode: Elevated frosted obsidian card with specular top highlight.
  */
 @Composable
@@ -182,23 +183,27 @@ fun LiquidGlassCard(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(18.dp),
     tintColor: Color? = null,
-    borderWidth: Dp = 0.8.dp,
+    borderWidth: Dp = 1.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = LocalIsDarkTheme.current
-    val baseFill = if (tintColor != null) {
+    val effectiveTint = if (tintColor != null) {
+        if (isDark) tintColor else getAdaptiveAccent(tintColor, isDark = false)
+    } else null
+
+    val baseFill = if (effectiveTint != null) {
         if (isDark) {
             Brush.verticalGradient(
                 colors = listOf(
-                    tintColor.copy(alpha = 0.14f),
-                    tintColor.copy(alpha = 0.04f),
+                    effectiveTint.copy(alpha = 0.14f),
+                    effectiveTint.copy(alpha = 0.04f),
                     Color(0x140F1620)
                 )
             )
         } else {
             Brush.verticalGradient(
                 colors = listOf(
-                    tintColor.copy(alpha = 0.08f),
+                    effectiveTint.copy(alpha = 0.09f),
                     Color(0xFFFFFFFF),
                     Color(0xFFFFFFFF)
                 )
@@ -226,22 +231,22 @@ fun LiquidGlassCard(
     Box(
         modifier = modifier
             .shadow(
-                elevation = if (isDark) 5.dp else 2.dp,
+                elevation = if (isDark) 5.dp else 3.dp,
                 shape = shape,
-                ambientColor = if (isDark) Color(0x35000000) else Color(0x08000000),
-                spotColor = if (isDark) Color(0x50000000) else Color(0x10000000)
+                ambientColor = if (isDark) Color(0x35000000) else Color(0x10000000),
+                spotColor = if (isDark) Color(0x50000000) else Color(0x18000000)
             )
             .clip(shape)
             .background(baseFill)
             .border(
                 width = borderWidth,
                 brush = if (isDark) {
-                    glassBorderBrush(tint = tintColor)
+                    glassBorderBrush(tint = effectiveTint)
                 } else {
                     Brush.verticalGradient(
                         listOf(
-                            (tintColor ?: Color(0xFF000000)).copy(alpha = if (tintColor != null) 0.25f else 0.12f),
-                            Color(0x12000000)
+                            (effectiveTint ?: Color(0xFF000000)).copy(alpha = if (effectiveTint != null) 0.40f else 0.20f),
+                            Color(0x16000000)
                         )
                     )
                 },
@@ -254,7 +259,7 @@ fun LiquidGlassCard(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                (tintColor ?: Color.White).copy(alpha = 0.22f),
+                                (effectiveTint ?: Color.White).copy(alpha = 0.22f),
                                 Color.Transparent
                             )
                         ),
@@ -342,29 +347,18 @@ fun LiquidGlassPill(
     color: Color = LiquidMint
 ) {
     val isDark = LocalIsDarkTheme.current
-    val effectiveColor = if (isDark) {
-        color
-    } else {
-        when (color) {
-            LiquidMint, LiquidEmerald -> Color(0xFF047857)  // High-contrast emerald
-            LiquidCyan, LiquidTeal -> Color(0xFF0F766E)     // High-contrast teal
-            LiquidRose -> Color(0xFFBE123C)                 // High-contrast rose
-            LiquidGold -> Color(0xFFB45309)                 // High-contrast amber
-            LiquidIndigo -> Color(0xFF4338CA)               // High-contrast indigo
-            else -> color
-        }
-    }
+    val effectiveColor = getAdaptiveAccent(color, isDark)
 
     Box(
         modifier = modifier
             .clip(CircleShape)
-            .background(if (isDark) effectiveColor.copy(alpha = 0.16f) else effectiveColor.copy(alpha = 0.10f))
+            .background(if (isDark) effectiveColor.copy(alpha = 0.16f) else effectiveColor.copy(alpha = 0.12f))
             .border(
                 width = 1.dp,
                 brush = Brush.verticalGradient(
                     listOf(
-                        effectiveColor.copy(alpha = if (isDark) 0.5f else 0.35f),
-                        effectiveColor.copy(alpha = if (isDark) 0.2f else 0.15f)
+                        effectiveColor.copy(alpha = if (isDark) 0.5f else 0.45f),
+                        effectiveColor.copy(alpha = if (isDark) 0.2f else 0.22f)
                     )
                 ),
                 shape = CircleShape
@@ -400,8 +394,8 @@ fun <T> AppleSegmentedControl(
             .clip(RoundedCornerShape(12.dp))
             .background(containerColor)
             .border(
-                0.5.dp,
-                if (isDark) Color(0x28FFFFFF) else Color(0x18000000),
+                0.8.dp,
+                if (isDark) Color(0x28FFFFFF) else Color(0x22000000),
                 RoundedCornerShape(12.dp)
             )
             .padding(3.dp)
@@ -417,6 +411,7 @@ fun <T> AppleSegmentedControl(
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .shadow(if (isSelected && !isDark) 2.dp else 0.dp, RoundedCornerShape(9.dp))
                         .clip(RoundedCornerShape(9.dp))
                         .background(
                             if (isSelected) {
@@ -447,7 +442,7 @@ fun <T> AppleSegmentedControl(
 
 /**
  * Floating Apple & Liquid Glass Navigation Bar.
- * Clean iOS tab bar layout with 5 tabs, responsive icon + label.
+ * Clean iOS tab bar layout with 4 tabs, responsive icon + label.
  */
 @Composable
 fun <T> FloatingLiquidGlassNavBar(
@@ -471,8 +466,8 @@ fun <T> FloatingLiquidGlassNavBar(
                 .shadow(
                     elevation = 12.dp,
                     shape = RoundedCornerShape(26.dp),
-                    ambientColor = if (isDark) Color(0x55000000) else Color(0x14000000),
-                    spotColor = if (isDark) Color(0x4006B6D4) else Color(0x200D9488)
+                    ambientColor = if (isDark) Color(0x55000000) else Color(0x18000000),
+                    spotColor = if (isDark) Color(0x4006B6D4) else Color(0x220D9488)
                 )
                 .clip(RoundedCornerShape(26.dp))
                 .background(
@@ -486,14 +481,14 @@ fun <T> FloatingLiquidGlassNavBar(
                     } else {
                         Brush.verticalGradient(
                             listOf(
-                                Color(0xF8FFFFFF),
-                                Color(0xF2F8FAFC)
+                                Color(0xFFFFFFFF),
+                                Color(0xFFF8FAFC)
                             )
                         )
                     }
                 )
                 .border(
-                    width = 0.8.dp,
+                    width = 1.dp,
                     brush = if (isDark) {
                         Brush.verticalGradient(
                             listOf(
@@ -505,8 +500,8 @@ fun <T> FloatingLiquidGlassNavBar(
                     } else {
                         Brush.verticalGradient(
                             listOf(
-                                Color(0x30000000),
-                                Color(0x14000000)
+                                Color(0x35000000),
+                                Color(0x18000000)
                             )
                         )
                     },
@@ -523,12 +518,11 @@ fun <T> FloatingLiquidGlassNavBar(
                     val (selectedIcon, unselectedIcon) = getItemIcons(item)
                     val label = getItemLabel(item)
 
+                    val selectedColor = if (isDark) LiquidMint else Color(0xFF0F766E)
+                    val unselectedColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF475569)
+
                     val iconTint by animateColorAsState(
-                        targetValue = if (isSelected) {
-                            if (isDark) LiquidMint else Color(0xFF0D9488)
-                        } else {
-                            if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
-                        },
+                        targetValue = if (isSelected) selectedColor else unselectedColor,
                         animationSpec = tween(durationMillis = 200),
                         label = "tab_icon_tint"
                     )
@@ -538,9 +532,16 @@ fun <T> FloatingLiquidGlassNavBar(
                             .weight(1f)
                             .height(52.dp)
                             .clip(RoundedCornerShape(18.dp))
+                            .background(
+                                if (isSelected) {
+                                    if (isDark) Color(0x2006B6D4) else Color(0x1A0F766E)
+                                } else {
+                                    Color.Transparent
+                                }
+                            )
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = ripple(color = if (isDark) LiquidMint else Color(0xFF0D9488)),
+                                indication = ripple(color = selectedColor),
                                 onClick = { onItemSelected(item) }
                             )
                             .testTag("nav_tab_${label.lowercase()}"),
@@ -561,11 +562,7 @@ fun <T> FloatingLiquidGlassNavBar(
                                 text = label,
                                 fontSize = 10.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) {
-                                    if (isDark) LiquidMint else Color(0xFF0D9488)
-                                } else {
-                                    if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
-                                },
+                                color = if (isSelected) selectedColor else unselectedColor,
                                 maxLines = 1
                             )
                         }

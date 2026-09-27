@@ -63,6 +63,7 @@ import com.example.ui.components.LiquidMint
 import com.example.ui.components.LiquidRose
 import com.example.ui.components.LiquidTeal
 import com.example.ui.theme.LocalIsDarkTheme
+import com.example.ui.theme.getAdaptiveAccent
 import com.example.ui.components.RecordExpenseDialog
 import com.example.ui.components.formatCurrency
 import com.example.ui.components.parseColorSafe
@@ -75,14 +76,13 @@ import java.util.Locale
 fun DashboardScreen(
     viewModel: MoneyViewModel,
     onAddIncomeClick: () -> Unit = {},
-    onOpenForexClick: () -> Unit = {},
+    onViewAllActivityClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isDark = LocalIsDarkTheme.current
     val currency by viewModel.currencySymbol.collectAsStateWithLifecycle()
     val summaries by viewModel.categorySummaries.collectAsStateWithLifecycle()
     val stats by viewModel.overallStats.collectAsStateWithLifecycle()
-    val goals by viewModel.goalsWithProgress.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val allocations by viewModel.allocationsWithSplits.collectAsStateWithLifecycle()
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
@@ -91,12 +91,6 @@ fun DashboardScreen(
     val expenseCategory by viewModel.expenseCategory.collectAsStateWithLifecycle()
     val expenseAmount by viewModel.expenseAmountInput.collectAsStateWithLifecycle()
     val expenseDesc by viewModel.expenseDescInput.collectAsStateWithLifecycle()
-
-    // Add goal dialog state
-    val isAddGoalOpen by viewModel.isAddGoalOpen.collectAsStateWithLifecycle()
-    val newGoalTitle by viewModel.newGoalTitle.collectAsStateWithLifecycle()
-    val newGoalTarget by viewModel.newGoalTarget.collectAsStateWithLifecycle()
-    val newGoalCatId by viewModel.newGoalCategoryId.collectAsStateWithLifecycle()
 
     // Expense modal dialog
     expenseCategory?.let { cat ->
@@ -109,22 +103,6 @@ fun DashboardScreen(
             onDescriptionChange = viewModel::onExpenseDescChanged,
             onConfirm = viewModel::recordExpense,
             onDismiss = viewModel::dismissExpenseDialog
-        )
-    }
-
-    // Add Goal dialog
-    if (isAddGoalOpen) {
-        AddGoalDialog(
-            currency = currency,
-            title = newGoalTitle,
-            target = newGoalTarget,
-            selectedCategoryId = newGoalCatId,
-            categories = categories,
-            onTitleChange = viewModel::onGoalTitleChanged,
-            onTargetChange = viewModel::onGoalTargetChanged,
-            onCategorySelect = viewModel::onGoalCategorySelected,
-            onConfirm = viewModel::saveNewGoal,
-            onDismiss = viewModel::dismissAddGoalDialog
         )
     }
 
@@ -244,10 +222,10 @@ fun DashboardScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(if (isDark) Color(0x20000000) else Color(0x0A0F172A))
+                        .background(if (isDark) Color(0x20000000) else Color(0xFFF1F5F9))
                         .border(
                             1.dp,
-                            if (isDark) Color(0x1FFFFFFF) else Color(0x100F172A),
+                            if (isDark) Color(0x1FFFFFFF) else Color(0x250F172A),
                             RoundedCornerShape(14.dp)
                         )
                         .padding(horizontal = 14.dp, vertical = 10.dp),
@@ -263,7 +241,7 @@ fun DashboardScreen(
                             text = formatCurrency(stats.totalReceived, currency),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isDark) LiquidMint else Color(0xFF059669)
+                            color = if (isDark) LiquidMint else Color(0xFF047857)
                         )
                     }
                     Column {
@@ -289,7 +267,7 @@ fun DashboardScreen(
                             text = formatCurrency(stats.totalSpent, currency),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isDark) LiquidRose else Color(0xFFE11D48)
+                            color = if (isDark) LiquidRose else Color(0xFFBE123C)
                         )
                     }
                 }
@@ -317,64 +295,6 @@ fun DashboardScreen(
                         color = Color.White
                     )
                 }
-            }
-        }
-
-        // Quick Forex / Currency Converter Action Banner
-        LiquidGlassCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onOpenForexClick() }
-                .testTag("forex_banner_card"),
-            shape = RoundedCornerShape(16.dp),
-            tintColor = LiquidCyan
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(if (isDark) Color(0x2806B6D4) else Color(0xFFE0F2FE)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CurrencyExchange,
-                            contentDescription = null,
-                            tint = if (isDark) LiquidCyan else Color(0xFF0284C7),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Column {
-                        Text(
-                            text = "Forex & Currency Converter",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textColorPrimary
-                        )
-                        Text(
-                            text = "Convert USD/Pula at custom rates & allocate",
-                            fontSize = 12.sp,
-                            color = textColorSecondary
-                        )
-                    }
-                }
-
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = if (isDark) LiquidCyan else Color(0xFF0284C7),
-                    modifier = Modifier.size(16.dp)
-                )
             }
         }
 
@@ -419,100 +339,7 @@ fun DashboardScreen(
             }
         }
 
-        // 3. YOUR GOALS
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Flag,
-                        contentDescription = null,
-                        tint = if (isDark) LiquidCyan else Color(0xFF0284C7),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "YOUR GOALS",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp,
-                        color = textColorPrimary
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isDark) Color(0x2238BDF8) else Color(0x1A0284C7))
-                        .border(
-                            1.dp,
-                            if (isDark) Color(0x6638BDF8) else Color(0x330284C7),
-                            RoundedCornerShape(12.dp)
-                        )
-                        .clickable { viewModel.openAddGoalDialog() }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                        .testTag("add_goal_button")
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            tint = if (isDark) LiquidCyan else Color(0xFF0284C7),
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Text(
-                            text = "New Goal",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isDark) LiquidCyan else Color(0xFF0284C7)
-                        )
-                    }
-                }
-            }
-
-            if (goals.isEmpty()) {
-                LiquidGlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "No active goals yet",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = textColorPrimary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Set targets like 'Emergency Reserve' or 'Tools Upgrade' to track progress.",
-                            fontSize = 12.sp,
-                            color = textColorSecondary
-                        )
-                    }
-                }
-            } else {
-                goals.forEach { goal ->
-                    GoalProgressCard(
-                        goal = goal,
-                        currency = currency,
-                        onDelete = { viewModel.deleteGoal(goal.id) }
-                    )
-                }
-            }
-        }
-
-        // 4. RECENT ACTIVITY
+        // 3. RECENT ACTIVITY
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -526,11 +353,27 @@ fun DashboardScreen(
                     letterSpacing = 0.8.sp,
                     color = textColorPrimary
                 )
-                Text(
-                    text = "Latest Allocations & Expenses",
-                    fontSize = 11.sp,
-                    color = textColorSecondary
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .clickable { onViewAllActivityClick() }
+                        .padding(vertical = 4.dp)
+                        .testTag("dashboard_view_all_history")
+                ) {
+                    Text(
+                        text = "View all",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isDark) LiquidCyan else Color(0xFF0284C7)
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "View all transactions",
+                        tint = if (isDark) LiquidCyan else Color(0xFF0284C7),
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
 
             if (recentActivities.isEmpty()) {
@@ -722,13 +565,14 @@ fun StatCard(
     modifier: Modifier = Modifier
 ) {
     val isDark = LocalIsDarkTheme.current
-    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0F172A)
-    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+    val effectiveAccent = getAdaptiveAccent(accentColor, isDark)
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
 
     LiquidGlassCard(
         modifier = modifier,
         shape = RoundedCornerShape(18.dp),
-        tintColor = accentColor
+        tintColor = effectiveAccent
     ) {
         Column(
             modifier = Modifier
@@ -751,14 +595,14 @@ fun StatCard(
                     modifier = Modifier
                         .size(28.dp)
                         .clip(CircleShape)
-                        .background(accentColor.copy(alpha = 0.20f))
-                        .border(1.dp, accentColor.copy(alpha = 0.45f), CircleShape),
+                        .background(effectiveAccent.copy(alpha = if (isDark) 0.20f else 0.14f))
+                        .border(1.dp, effectiveAccent.copy(alpha = if (isDark) 0.45f else 0.40f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = accentColor,
+                        tint = effectiveAccent,
                         modifier = Modifier.size(15.dp)
                     )
                 }
@@ -781,15 +625,16 @@ fun CategoryBalanceCard(
 ) {
     val isDark = LocalIsDarkTheme.current
     val catColor = parseColorSafe(category.colorHex)
-    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0F172A)
-    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+    val effectiveCatColor = getAdaptiveAccent(catColor, isDark)
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
 
     LiquidGlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("category_card_${category.id}"),
         shape = RoundedCornerShape(20.dp),
-        tintColor = catColor
+        tintColor = effectiveCatColor
     ) {
         Column(
             modifier = Modifier
@@ -811,7 +656,7 @@ fun CategoryBalanceCard(
                         modifier = Modifier
                             .size(12.dp)
                             .clip(CircleShape)
-                            .background(catColor)
+                            .background(effectiveCatColor)
                             .border(1.dp, if (isDark) Color.White.copy(alpha = 0.6f) else Color(0x330F172A), CircleShape)
                     )
                     Text(
@@ -855,7 +700,7 @@ fun CategoryBalanceCard(
                         text = formatCurrency(category.currentBalance, currency),
                         fontSize = 26.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = if (category.currentBalance >= 0) textColorPrimary else LiquidRose
+                        color = if (category.currentBalance >= 0) textColorPrimary else (if (isDark) LiquidRose else Color(0xFFBE123C))
                     )
                 }
 
@@ -875,7 +720,10 @@ fun CategoryBalanceCard(
                         .border(
                             1.dp,
                             Brush.verticalGradient(
-                                listOf(Color(0x80F43F5E), Color(0x20F43F5E))
+                                listOf(
+                                    if (isDark) Color(0x80F43F5E) else Color(0xFFBE123C),
+                                    if (isDark) Color(0x20F43F5E) else Color(0x60BE123C)
+                                )
                             ),
                             RoundedCornerShape(12.dp)
                         )
@@ -890,14 +738,14 @@ fun CategoryBalanceCard(
                         Icon(
                             imageVector = Icons.Default.ShoppingBag,
                             contentDescription = null,
-                            tint = LiquidRose,
+                            tint = if (isDark) LiquidRose else Color(0xFFBE123C),
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
                             text = "Spend",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isDark) Color(0xFFF8FAFC) else Color(0xFFE11D48)
+                            color = if (isDark) Color(0xFFF8FAFC) else Color(0xFFBE123C)
                         )
                     }
                 }
@@ -908,10 +756,10 @@ fun CategoryBalanceCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
-                    .background(if (isDark) Color(0x20000000) else Color(0x0A0F172A))
+                    .background(if (isDark) Color(0x20000000) else Color(0xFFF1F5F9))
                     .border(
                         1.dp,
-                        if (isDark) Color(0x20FFFFFF) else Color(0x100F172A),
+                        if (isDark) Color(0x20FFFFFF) else Color(0x250F172A),
                         RoundedCornerShape(10.dp)
                     )
                     .padding(horizontal = 14.dp, vertical = 8.dp),
@@ -927,7 +775,7 @@ fun CategoryBalanceCard(
                     text = "Spent: ${formatCurrency(category.totalSpent, currency)}",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (category.totalSpent > 0) LiquidRose else textColorSecondary
+                    color = if (category.totalSpent > 0) (if (isDark) LiquidRose else Color(0xFFBE123C)) else textColorSecondary
                 )
             }
         }

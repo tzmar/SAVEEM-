@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -29,6 +30,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -80,6 +82,7 @@ import com.example.ui.components.LiquidTeal
 import com.example.ui.components.formatCurrency
 import com.example.ui.components.parseColorSafe
 import com.example.ui.theme.LocalIsDarkTheme
+import com.example.ui.theme.getAdaptiveAccent
 import com.example.ui.viewmodel.MoneyViewModel
 import java.util.Locale
 
@@ -88,8 +91,11 @@ import java.util.Locale
 fun ForexScreen(
     viewModel: MoneyViewModel,
     onNavigateToAllocate: () -> Unit,
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    BackHandler(onBack = onBack)
+
     val isDark = LocalIsDarkTheme.current
     val focusManager = LocalFocusManager.current
 
@@ -100,15 +106,6 @@ fun ForexScreen(
     val isInverted by viewModel.isForexInverted.collectAsStateWithLifecycle()
     val feedbackMessage by viewModel.forexFeedback.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
-    val successEvent by viewModel.allocationSuccessEvent.collectAsStateWithLifecycle()
-
-    // Show celebration dialog if direct allocation succeeded
-    successEvent?.let { event ->
-        AllocationSuccessDialog(
-            event = event,
-            onDismiss = { viewModel.dismissAllocationDialog() }
-        )
-    }
 
     val availablePairs = viewModel.availableCurrencyPairs
 
@@ -136,42 +133,48 @@ fun ForexScreen(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        // Apple Large Title Header
+        // Header with Back Button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(if (isDark) Color(0x22FFFFFF) else Color(0x10000000))
+                        .testTag("forex_back_button")
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(if (isDark) LiquidCyan else Color(0xFF0284C7))
-                    )
-                    Text(
-                        text = "CURRENCY & FOREX TRADE",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.2.sp,
-                        color = if (isDark) LiquidCyan else Color(0xFF0284C7)
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back to Settings",
+                        tint = textColorPrimary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Forex Converter",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = textColorPrimary
-                )
+                Column {
+                    Text(
+                        text = "Forex Converter",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textColorPrimary
+                    )
+                    Text(
+                        text = "Custom exchange rates & conversion",
+                        fontSize = 12.sp,
+                        color = textColorSecondary
+                    )
+                }
             }
 
             LiquidGlassPill(
-                text = "${selectedPair.baseCode}/${selectedPair.targetCode}",
+                text = "$fromCode → $toCode",
                 color = LiquidCyan
             )
         }
@@ -250,7 +253,7 @@ fun ForexScreen(
                                 color = if (isSelected) {
                                     if (isDark) LiquidCyan else Color(0xFF0284C7)
                                 } else {
-                                    if (isDark) Color(0x24FFFFFF) else Color(0x18000000)
+                                    if (isDark) Color(0x24FFFFFF) else Color(0x25000000)
                                 },
                                 shape = RoundedCornerShape(12.dp)
                             )
@@ -323,10 +326,10 @@ fun ForexScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(if (isDark) Color(0x20000000) else Color(0xFFF8FAFC))
+                        .background(if (isDark) Color(0x20000000) else Color(0xFFF1F5F9))
                         .border(
                             1.dp,
-                            if (isDark) Color(0x28FFFFFF) else Color(0x18000000),
+                            if (isDark) Color(0x28FFFFFF) else Color(0x25000000),
                             RoundedCornerShape(14.dp)
                         )
                         .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -418,8 +421,8 @@ fun ForexScreen(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(if (isDark) Color(0x20FFFFFF) else Color(0xFFF1F5F9))
                                 .border(
-                                    0.8.dp,
-                                    if (isDark) Color(0x28FFFFFF) else Color(0x18000000),
+                                    1.dp,
+                                    if (isDark) Color(0x28FFFFFF) else Color(0x25000000),
                                     RoundedCornerShape(10.dp)
                                 )
                                 .clickable { viewModel.adjustForexRate(delta) }
@@ -493,10 +496,10 @@ fun ForexScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isDark) Color(0x22000000) else Color(0xFFF8FAFC))
+                        .background(if (isDark) Color(0x22000000) else Color(0xFFF1F5F9))
                         .border(
                             1.dp,
-                            if (isDark) Color(0x30FFFFFF) else Color(0x18000000),
+                            if (isDark) Color(0x30FFFFFF) else Color(0x25000000),
                             RoundedCornerShape(16.dp)
                         )
                         .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -519,7 +522,7 @@ fun ForexScreen(
                                     text = fromSymbol,
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = if (isDark) LiquidMint else Color(0xFF0F766E)
+                                    color = if (isDark) LiquidMint else Color(0xFF047857)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Box(
@@ -577,7 +580,7 @@ fun ForexScreen(
                             .background(if (isDark) Color(0xFF1E2632) else Color(0xFFE5E5EA))
                             .border(
                                 1.dp,
-                                if (isDark) Color(0x30FFFFFF) else Color(0x18000000),
+                                if (isDark) Color(0x30FFFFFF) else Color(0x25000000),
                                 CircleShape
                             )
                             .clickable { viewModel.toggleInvertForex() },
@@ -606,7 +609,7 @@ fun ForexScreen(
                         )
                         .border(
                             1.dp,
-                            if (isDark) Color(0x5034D399) else Color(0x600D9488),
+                            if (isDark) Color(0x5034D399) else Color(0xFF0D9488),
                             RoundedCornerShape(16.dp)
                         )
                         .padding(horizontal = 16.dp, vertical = 14.dp)
@@ -661,14 +664,14 @@ fun ForexScreen(
                                     if (isSelected) {
                                         if (isDark) LiquidTeal else Color(0xFF0D9488)
                                     } else {
-                                        if (isDark) Color(0x18FFFFFF) else Color(0xFFFFFFFF)
+                                        if (isDark) Color(0x18FFFFFF) else Color(0xFFF1F5F9)
                                     }
                                 )
                                 .border(
                                     1.dp,
                                     if (isSelected) Color.Transparent
                                     else if (isDark) Color(0x28FFFFFF)
-                                    else Color(0x18000000),
+                                    else Color(0x25000000),
                                     RoundedCornerShape(12.dp)
                                 )
                                 .clickable {
@@ -689,160 +692,36 @@ fun ForexScreen(
             }
         }
 
-        // 3. PUSH TO ALLOCATOR (PRIMARY ACTION)
-        LiquidGlassCard(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            tintColor = LiquidEmerald
+        // 3. Single Action: "Use this amount in Allocate"
+        LiquidGlassButton(
+            onClick = {
+                focusManager.clearFocus()
+                viewModel.transferForexToAllocator(onSuccess = onNavigateToAllocate)
+            },
+            enabled = convertedAmount > 0,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .testTag("use_forex_in_allocate_button"),
+            gradientColors = listOf(Color(0xFF0EA5E9), Color(0xFF0D9488), Color(0xFF10B981))
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "AUTOMATIC ALLOCATION",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.8.sp,
-                            color = textColorTertiary
-                        )
-                        Text(
-                            text = "Transfer converted money into SAVEEM Allocator",
-                            fontSize = 13.sp,
-                            color = textColorSecondary
-                        )
-                    }
-
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.TrendingUp,
-                        contentDescription = null,
-                        tint = if (isDark) LiquidMint else Color(0xFF047857),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                // Split Preview of this converted income
-                if (convertedAmount > 0) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(if (isDark) Color(0x20000000) else Color(0xFFF8FAFC))
-                            .border(
-                                1.dp,
-                                if (isDark) Color(0x20FFFFFF) else Color(0x18000000),
-                                RoundedCornerShape(14.dp)
-                            )
-                            .padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "Immediate split of ${formatCurrency(convertedAmount, toSymbol)}:",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = textColorSecondary
-                        )
-
-                        categories.forEach { cat ->
-                            val catColor = parseColorSafe(cat.colorHex)
-                            val catSplit = convertedAmount * (cat.percentage / 100.0)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .clip(CircleShape)
-                                            .background(catColor)
-                                    )
-                                    Text(
-                                        text = cat.name,
-                                        fontSize = 12.sp,
-                                        color = textColorPrimary
-                                    )
-                                }
-                                Text(
-                                    text = formatCurrency(catSplit, toSymbol),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isDark) LiquidMint else Color(0xFF047857)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Large Primary Action: Directly allocate money
-                LiquidGlassButton(
-                    onClick = {
-                        focusManager.clearFocus()
-                        viewModel.allocateForexDirectly()
-                    },
-                    enabled = convertedAmount > 0,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp)
-                        .testTag("allocate_forex_directly_button"),
-                    gradientColors = listOf(Color(0xFF0D9488), Color(0xFF10B981))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountBalanceWallet,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (convertedAmount > 0) {
-                            "Allocate ${formatCurrency(convertedAmount, toSymbol)} Directly Now"
-                        } else {
-                            "Enter amount to allocate"
-                        },
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-
-                // Secondary Action: Customize in Allocator Screen
-                if (convertedAmount > 0) {
-                    OutlinedButton(
-                        onClick = {
-                            viewModel.transferForexToAllocator(onSuccess = onNavigateToAllocate)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(46.dp)
-                            .testTag("transfer_forex_button"),
-                        shape = RoundedCornerShape(14.dp),
-                        border = BorderStroke(
-                            1.dp,
-                            if (isDark) Color(0x4006B6D4) else Color(0x400284C7)
-                        )
-                    ) {
-                        Text(
-                            text = "Customize in Allocator Tab →",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (isDark) LiquidCyan else Color(0xFF0284C7)
-                        )
-                    }
-                }
-            }
+            Icon(
+                imageVector = Icons.Default.AccountBalanceWallet,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (convertedAmount > 0) {
+                    "Use ${formatCurrency(convertedAmount, toSymbol)} in Allocate"
+                } else {
+                    "Use this amount in Allocate"
+                },
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))

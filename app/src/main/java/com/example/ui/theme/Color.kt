@@ -40,5 +40,36 @@ val LiquidLightSurface = Color(0xFFFFFFFF)        // Apple Card Surface (Crisp W
 val LiquidLightSurfaceVariant = Color(0xFFE5E5EA) // Inset group border / card fill
 val LiquidLightTextPrimary = Color(0xFF0A0F1D)    // Ultra-crisp near-black text (100% visible)
 val LiquidLightTextSecondary = Color(0xFF334155)  // Deep slate-700 secondary label (high contrast)
-val LiquidLightTextTertiary = Color(0xFF64748B)   // Slate-500 captions
-val LiquidLightOutline = Color(0x1F000000)        // Apple hairline divider (12% black)
+val LiquidLightTextTertiary = Color(0xFF475569)   // Slate-600 captions (crisp contrast)
+val LiquidLightOutline = Color(0xFF94A3B8)        // Hairline & border outline (high visibility)
+
+/**
+ * Returns an accessible, vibrant, high-contrast version of any accent color when in light mode.
+ * Preserves the exact iOS aesthetic while guaranteeing 100% text/icon visibility.
+ */
+fun getAdaptiveAccent(color: Color, isDark: Boolean): Color {
+    if (isDark) return color
+    return when (color) {
+        LiquidMintAccent, Color(0xFF34D399) -> AppleGreenLight
+        LiquidEmeraldAccent, Color(0xFF10B981) -> AppleGreenLight
+        LiquidCyanAccent, Color(0xFF06B6D4) -> AppleBlueLight
+        LiquidTealPrimary, Color(0xFF0D9488) -> AppleTealLight
+        LiquidRoseAccent, Color(0xFFF43F5E), Color(0xFFE11D48) -> AppleRoseLight
+        LiquidAmberAccent, Color(0xFFF59E0B) -> AppleAmberLight
+        LiquidIndigoAccent, Color(0xFF6366F1) -> AppleIndigoLight
+        Color(0xFFA855F7) -> Color(0xFF7E22CE)
+        else -> {
+            val luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
+            if (luminance > 0.35) {
+                Color(
+                    red = (color.red * 0.55f).coerceIn(0f, 1f),
+                    green = (color.green * 0.55f).coerceIn(0f, 1f),
+                    blue = (color.blue * 0.55f).coerceIn(0f, 1f),
+                    alpha = 1f
+                )
+            } else {
+                color
+            }
+        }
+    }
+}

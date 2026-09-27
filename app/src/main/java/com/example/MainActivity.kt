@@ -68,7 +68,6 @@ enum class AppTab(
 ) {
     DASHBOARD("Dashboard", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
     ALLOCATE("Allocate", Icons.Filled.AccountBalanceWallet, Icons.Outlined.AccountBalanceWallet),
-    FOREX("Forex", Icons.Filled.CurrencyExchange, Icons.Outlined.CurrencyExchange),
     HISTORY("History", Icons.Filled.History, Icons.Outlined.History),
     SETTINGS("Settings", Icons.Filled.Settings, Icons.Outlined.Settings)
 }
@@ -97,9 +96,16 @@ class MainActivity : ComponentActivity() {
 fun MoneyApp(viewModel: MoneyViewModel) {
     val context = LocalContext.current
     var currentTab by remember { mutableStateOf(AppTab.DASHBOARD) }
+    var settingsSubPage by remember { mutableStateOf(com.example.ui.screens.SettingsSubPage.ROOT) }
 
-    // Intercept back button to return to Dashboard tab if on another screen
-    BackHandler(enabled = currentTab != AppTab.DASHBOARD) {
+    // Intercept back button hierarchically:
+    // 1. If inside a Settings sub-page, return to root Settings
+    // 2. Otherwise if on another tab, return to Dashboard tab
+    BackHandler(enabled = currentTab == AppTab.SETTINGS && settingsSubPage != com.example.ui.screens.SettingsSubPage.ROOT) {
+        settingsSubPage = com.example.ui.screens.SettingsSubPage.ROOT
+    }
+
+    BackHandler(enabled = currentTab != AppTab.DASHBOARD && (currentTab != AppTab.SETTINGS || settingsSubPage == com.example.ui.screens.SettingsSubPage.ROOT)) {
         currentTab = AppTab.DASHBOARD
     }
 
@@ -137,9 +143,14 @@ fun MoneyApp(viewModel: MoneyViewModel) {
             contentWindowInsets = WindowInsets.safeDrawing,
             bottomBar = {
                 FloatingLiquidGlassNavBar(
-                    items = AppTab.values().toList(),
+                    items = AppTab.entries.toList(),
                     selectedItem = currentTab,
-                    onItemSelected = { currentTab = it },
+                    onItemSelected = { selectedTab ->
+                        currentTab = selectedTab
+                        if (selectedTab != AppTab.SETTINGS) {
+                            settingsSubPage = com.example.ui.screens.SettingsSubPage.ROOT
+                        }
+                    },
                     getItemLabel = { it.label },
                     getItemIcons = { Pair(it.selectedIcon, it.unselectedIcon) }
                 )
@@ -154,18 +165,25 @@ fun MoneyApp(viewModel: MoneyViewModel) {
                     AppTab.DASHBOARD -> DashboardScreen(
                         viewModel = viewModel,
                         onAddIncomeClick = { currentTab = AppTab.ALLOCATE },
-                        onOpenForexClick = { currentTab = AppTab.FOREX }
+                        onViewAllActivityClick = { currentTab = AppTab.HISTORY }
                     )
                     AppTab.ALLOCATE -> AllocateScreen(
                         viewModel = viewModel,
-                        onOpenForexClick = { currentTab = AppTab.FOREX }
-                    )
-                    AppTab.FOREX -> ForexScreen(
-                        viewModel = viewModel,
-                        onNavigateToAllocate = { currentTab = AppTab.ALLOCATE }
+                        onOpenForexClick = {
+                            currentTab = AppTab.SETTINGS
+                            settingsSubPage = com.example.ui.screens.SettingsSubPage.FOREX
+                        }
                     )
                     AppTab.HISTORY -> HistoryScreen(viewModel = viewModel)
-                    AppTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
+                    AppTab.SETTINGS -> SettingsScreen(
+                        viewModel = viewModel,
+                        onNavigateToAllocate = {
+                            currentTab = AppTab.ALLOCATE
+                            settingsSubPage = com.example.ui.screens.SettingsSubPage.ROOT
+                        },
+                        currentSubPage = settingsSubPage,
+                        onSubPageChange = { settingsSubPage = it }
+                    )
                 }
             }
         }

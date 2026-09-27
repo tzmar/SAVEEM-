@@ -68,6 +68,7 @@ import com.example.ui.components.LiquidGlassPill
 import com.example.ui.components.LiquidMint
 import com.example.ui.components.LiquidTeal
 import com.example.ui.theme.LocalIsDarkTheme
+import com.example.ui.theme.getAdaptiveAccent
 import com.example.ui.components.formatCurrency
 import com.example.ui.components.getAccessibleTextColor
 import com.example.ui.components.parseColorSafe
@@ -88,8 +89,6 @@ fun AllocateScreen(
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val successEvent by viewModel.allocationSuccessEvent.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
-
-    var showNoteField by remember { mutableStateOf(false) }
 
     val numericAmount = amountInput.toDoubleOrNull() ?: 0.0
     val isReadyToAllocate = numericAmount > 0.0
@@ -182,17 +181,18 @@ fun AllocateScreen(
                             if (isDark) {
                                 Brush.verticalGradient(listOf(Color(0x35000000), Color(0x20000000)))
                             } else {
-                                Brush.verticalGradient(listOf(Color(0x0F0F172A), Color(0x080F172A)))
+                                Brush.verticalGradient(listOf(Color(0xFFF1F5F9), Color(0xFFE2E8F0)))
                             }
                         )
                         .border(
                             width = 1.5.dp,
                             brush = Brush.verticalGradient(
                                 if (isReadyToAllocate) {
-                                    listOf(LiquidMint, LiquidCyan.copy(alpha = 0.5f), Color(0x33FFFFFF))
+                                    if (isDark) listOf(LiquidMint, LiquidCyan.copy(alpha = 0.5f), Color(0x33FFFFFF))
+                                    else listOf(Color(0xFF0D9488), Color(0xFF047857), Color(0x400D9488))
                                 } else {
                                     if (isDark) listOf(Color(0x4DFFFFFF), Color(0x1AFFFFFF))
-                                    else listOf(Color(0x200F172A), Color(0x100F172A))
+                                    else listOf(Color(0x300F172A), Color(0x180F172A))
                                 }
                             ),
                             shape = RoundedCornerShape(20.dp)
@@ -263,14 +263,14 @@ fun AllocateScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Small-income friendly quick-tap presets & Forex converter shortcut
+                // Small "Convert currency" shortcut button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Quick amounts:",
+                        text = "Quick presets:",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = textColorSecondary
@@ -281,7 +281,7 @@ fun AllocateScreen(
                             .clip(RoundedCornerShape(10.dp))
                             .background(if (isDark) Color(0x2806B6D4) else Color(0xFFE0F2FE))
                             .border(
-                                0.8.dp,
+                                1.dp,
                                 if (isDark) Color(0x6006B6D4) else Color(0xFF0284C7),
                                 RoundedCornerShape(10.dp)
                             )
@@ -297,10 +297,10 @@ fun AllocateScreen(
                                 imageVector = Icons.Default.CurrencyExchange,
                                 contentDescription = null,
                                 tint = if (isDark) LiquidCyan else Color(0xFF0284C7),
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(13.dp)
                             )
                             Text(
-                                text = "Convert USD/Forex",
+                                text = "Convert currency",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isDark) LiquidCyan else Color(0xFF0284C7)
@@ -331,7 +331,7 @@ fun AllocateScreen(
                                         if (isDark) {
                                             Brush.verticalGradient(listOf(Color(0x2EFFFFFF), Color(0x14FFFFFF)))
                                         } else {
-                                            Brush.verticalGradient(listOf(Color(0x0D0F172A), Color(0x050F172A)))
+                                            Brush.verticalGradient(listOf(Color(0xFFF1F5F9), Color(0xFFE2E8F0)))
                                         }
                                     }
                                 )
@@ -340,7 +340,7 @@ fun AllocateScreen(
                                     brush = Brush.verticalGradient(
                                         if (isSelected) listOf(Color(0xCCFFFFFF), Color(0x66FFFFFF))
                                         else if (isDark) listOf(Color(0x33FFFFFF), Color(0x14FFFFFF))
-                                        else listOf(Color(0x150F172A), Color(0x0A0F172A))
+                                        else listOf(Color(0x28000000), Color(0x14000000))
                                     ),
                                     shape = RoundedCornerShape(14.dp)
                                 )
@@ -361,38 +361,78 @@ fun AllocateScreen(
                     }
                 }
 
-                // Optional note toggle
-                Spacer(modifier = Modifier.height(14.dp))
-                if (!showNoteField && noteInput.isEmpty()) {
-                    Text(
-                        text = "+ Add optional note (e.g. Freelance project)",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isDark) LiquidCyan else Color(0xFF0284C7),
-                        modifier = Modifier
-                            .clickable { showNoteField = true }
-                            .padding(vertical = 4.dp)
-                    )
-                }
+                Spacer(modifier = Modifier.height(18.dp))
 
-                AnimatedVisibility(
-                    visible = showNoteField || noteInput.isNotEmpty(),
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
+                // Step 2 & 3: Source and Optional Note
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    Text(
+                        text = "Choose source (optional):",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = textColorSecondary
+                    )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val sources = listOf("Salary", "Freelance", "Client Work", "Side Gig", "Gift", "Sales")
+                        sources.forEach { src ->
+                            val isSourceSelected = noteInput.contains(src)
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(
+                                        if (isSourceSelected) {
+                                            if (isDark) Color(0x4006B6D4) else Color(0x250284C7)
+                                        } else {
+                                            if (isDark) Color(0x15FFFFFF) else Color(0xFFF1F5F9)
+                                        }
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isSourceSelected) {
+                                            if (isDark) LiquidCyan else Color(0xFF0284C7)
+                                        } else {
+                                            if (isDark) Color(0x22FFFFFF) else Color(0x20000000)
+                                        },
+                                        RoundedCornerShape(10.dp)
+                                    )
+                                    .clickable {
+                                        viewModel.onNoteChanged(src)
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = src,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSourceSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSourceSelected) {
+                                        if (isDark) LiquidCyan else Color(0xFF0284C7)
+                                    } else {
+                                        textColorSecondary
+                                    }
+                                )
+                            }
+                        }
+                    }
+
                     OutlinedTextField(
                         value = noteInput,
                         onValueChange = viewModel::onNoteChanged,
-                        placeholder = { Text("Income source / note (optional)", fontSize = 13.sp, color = textColorSecondary) },
+                        placeholder = { Text("Note / Description (e.g. Website payment)", fontSize = 13.sp, color = textColorSecondary) },
                         singleLine = true,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp)
+                            .padding(top = 4.dp)
                             .testTag("income_note_input"),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = if (isDark) LiquidCyan else Color(0xFF0284C7),
-                            unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x200F172A),
+                            unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0xFF94A3B8),
                             focusedTextColor = textColorPrimary,
                             unfocusedTextColor = textColorPrimary
                         )
@@ -533,8 +573,9 @@ fun CategorySplitRow(
     isHighlighted: Boolean
 ) {
     val isDark = LocalIsDarkTheme.current
-    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0F172A)
-    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+    val effectiveColor = getAdaptiveAccent(color, isDark)
+    val textColorPrimary = if (isDark) Color(0xFFF8FAFC) else Color(0xFF0A0F1D)
+    val textColorSecondary = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
 
     Box(
         modifier = Modifier
@@ -543,13 +584,16 @@ fun CategorySplitRow(
             .background(
                 if (isHighlighted) {
                     Brush.horizontalGradient(
-                        listOf(color.copy(alpha = 0.20f), color.copy(alpha = 0.05f))
+                        listOf(
+                            effectiveColor.copy(alpha = if (isDark) 0.20f else 0.12f),
+                            effectiveColor.copy(alpha = if (isDark) 0.05f else 0.02f)
+                        )
                     )
                 } else {
                     if (isDark) {
                         Brush.verticalGradient(listOf(Color(0x22FFFFFF), Color(0x0EFFFFFF)))
                     } else {
-                        Brush.verticalGradient(listOf(Color(0x0A0F172A), Color(0x040F172A)))
+                        Brush.verticalGradient(listOf(Color(0xFFF8FAFC), Color(0xFFF1F5F9)))
                     }
                 }
             )
@@ -557,10 +601,13 @@ fun CategorySplitRow(
                 width = 1.dp,
                 brush = Brush.verticalGradient(
                     if (isHighlighted) {
-                        listOf(color.copy(alpha = 0.6f), color.copy(alpha = 0.15f))
+                        listOf(
+                            effectiveColor.copy(alpha = if (isDark) 0.6f else 0.50f),
+                            effectiveColor.copy(alpha = if (isDark) 0.15f else 0.25f)
+                        )
                     } else {
                         if (isDark) listOf(Color(0x2BFFFFFF), Color(0x10FFFFFF))
-                        else listOf(Color(0x120F172A), Color(0x080F172A))
+                        else listOf(Color(0x25000000), Color(0x12000000))
                     }
                 ),
                 shape = RoundedCornerShape(16.dp)
@@ -581,7 +628,7 @@ fun CategorySplitRow(
                     modifier = Modifier
                         .size(12.dp)
                         .clip(CircleShape)
-                        .background(color)
+                        .background(effectiveColor)
                         .border(1.dp, if (isDark) Color.White.copy(alpha = 0.6f) else Color(0x330F172A), CircleShape)
                 )
                 Column {
@@ -600,7 +647,7 @@ fun CategorySplitRow(
             }
 
             val displayAmountColor = if (isHighlighted) {
-                getAccessibleTextColor(color, isDark)
+                effectiveColor
             } else {
                 textColorSecondary
             }
