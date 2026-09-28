@@ -81,14 +81,25 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
     private val _allocationSuccessEvent = MutableStateFlow<AllocationSuccessEvent?>(null)
     val allocationSuccessEvent: StateFlow<AllocationSuccessEvent?> = _allocationSuccessEvent.asStateFlow()
 
+    private val _roundingCategoryId = MutableStateFlow<Long?>(null)
+    val roundingCategoryId: StateFlow<Long?> = _roundingCategoryId.asStateFlow()
+
+    fun setRoundingCategory(categoryId: Long) {
+        _roundingCategoryId.value = categoryId
+        viewModelScope.launch {
+            repository.setRoundingCategoryId(categoryId)
+        }
+    }
+
     // Real-time split preview
     val splitPreviews: StateFlow<List<SplitPreview>> = combine(
         _amountInput,
-        categories
-    ) { input, cats ->
+        categories,
+        _roundingCategoryId
+    ) { input, cats, roundingId ->
         val amount = input.toDoubleOrNull() ?: 0.0
         if (amount > 0.0) {
-            repository.calculateSplits(amount, cats)
+            repository.calculateSplits(amount, cats, roundingId)
         } else {
             emptyList()
         }
@@ -135,6 +146,11 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
                 }
             }
         }
+        viewModelScope.launch {
+            repository.roundingCategoryId.collect { id ->
+                _roundingCategoryId.value = id
+            }
+        }
     }
 
     fun checkAndTriggerGoalMilestones(context: Context, goals: List<GoalProgress>, currency: String) {
@@ -179,7 +195,7 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
         _noteInput.value = newNote
     }
 
-    fun allocateMoney() {
+    fun allocateMoney(context: Context? = null) {
         val amount = _amountInput.value.toDoubleOrNull() ?: return
         if (amount <= 0.0) return
 
@@ -190,6 +206,14 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
                 splits = savedSplits,
                 currency = currencySymbol.value
             )
+            // Congratulate user with notification saying "Save like Tzilez!"
+            context?.let { ctx ->
+                GoalNotificationHelper.showDepositNotification(
+                    context = ctx,
+                    amount = amount,
+                    currencySymbol = currencySymbol.value
+                )
+            }
             // Reset input for next entry
             _amountInput.value = ""
             _noteInput.value = ""
@@ -290,8 +314,11 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
 
     // Settings & Category Editing
     fun loadEditableCategories() {
-        _editableCategories.value = categories.value.map { it.copy() }
-        _settingsFeedbackMessage.value = null
+        viewModelScope.launch {
+            val list = repository.getCategoriesList()
+            _editableCategories.value = list.map { it.copy() }
+            _settingsFeedbackMessage.value = null
+        }
     }
 
     fun addNewCategory(
@@ -319,6 +346,9 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
     }
 
     fun deleteCategory(categoryId: Long) {
+        if (_roundingCategoryId.value == categoryId) {
+            _roundingCategoryId.value = null
+        }
         viewModelScope.launch {
             repository.deleteCategoryById(categoryId)
             loadEditableCategories()
@@ -355,7 +385,7 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
         val list = _editableCategories.value.toMutableList()
         if (index in list.indices && list.size > 1) {
             list.removeAt(index)
-            _editableCategories.value = list
+            _editableCategories.value = repository.recalculateRemainingPercentages(list)
         }
     }
 
@@ -538,7 +568,7 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
         onSuccess()
     }
 
-    fun allocateForexDirectly() {
+    fun allocateForexDirectly(context: Context? = null) {
         val pair = _selectedPair.value
         val baseAmount = _forexBaseAmountInput.value.toDoubleOrNull() ?: 0.0
         if (baseAmount <= 0.0) return
@@ -565,7 +595,38 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
                 splits = savedSplits,
                 currency = targetSymbol
             )
+            context?.let { ctx ->
+                GoalNotificationHelper.showDepositNotification(
+                    context = ctx,
+                    amount = targetAmount,
+                    currencySymbol = targetSymbol
+                )
+            }
             _forexFeedback.value = "Allocated $targetSymbol$formattedTarget into your categories!"
+        }
+    }
+
+    // Backup & Restore
+    fun exportBackup(onReady: (String) -> Unit) {
+        viewModelScope.launch {
+            val json = repository.exportFullBackupJson()
+            onReady(json)
+        }
+    }
+
+    fun restoreBackup(
+        jsonString: String,
+        onSuccess: (com.example.util.BackupSummary) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val summary = repository.restoreFullBackupJson(jsonString)
+                loadEditableCategories()
+                onSuccess(summary)
+            } catch (e: Exception) {
+                onError(e.message ?: "Failed to restore backup")
+            }
         }
     }
 }

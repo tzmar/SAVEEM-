@@ -1,5 +1,5 @@
 {
-  "name": "SAVEEM",
+  "name": "Pock-Em",
   "description": "Simple personal irregular-income money allocation and goal tracking app.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

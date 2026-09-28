@@ -15,6 +15,15 @@ interface SettingsDao {
     @Query("SELECT value FROM app_settings WHERE `key` = :key LIMIT 1")
     suspend fun getSettingValue(key: String): String?
 
+    @Query("SELECT * FROM app_settings")
+    suspend fun getAllSettingsList(): List<AppSettingEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun setSetting(setting: AppSettingEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSettings(settings: List<AppSettingEntity>)
+
+    @Query("DELETE FROM app_settings")
+    suspend fun deleteAllSettings()
 }

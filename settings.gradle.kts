@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "SAVEEM"
+rootProject.name = "Pock-Em"
 
 include(":app")

@@ -19,8 +19,17 @@ interface AllocationDao {
     @Query("SELECT * FROM allocation_splits")
     fun getAllSplits(): Flow<List<AllocationSplitEntity>>
 
+    @Query("SELECT * FROM allocations ORDER BY timestamp DESC")
+    suspend fun getAllAllocationsList(): List<AllocationEntity>
+
+    @Query("SELECT * FROM allocation_splits")
+    suspend fun getAllSplitsList(): List<AllocationSplitEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllocation(allocation: AllocationEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllocations(allocations: List<AllocationEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSplits(splits: List<AllocationSplitEntity>)

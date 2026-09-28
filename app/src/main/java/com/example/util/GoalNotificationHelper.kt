@@ -109,4 +109,56 @@ object GoalNotificationHelper {
             // Guard against any security or notification exception
         }
     }
+
+    fun showDepositNotification(
+        context: Context,
+        amount: Double,
+        currencySymbol: String
+    ) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val hasPermission = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+                if (!hasPermission) return
+            }
+
+            createNotificationChannel(context)
+
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                9999,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val formattedAmount = if (amount % 1.0 == 0.0) {
+                "$currencySymbol${amount.toInt()}"
+            } else {
+                "$currencySymbol${String.format(java.util.Locale.US, "%,.2f", amount)}"
+            }
+
+            val title = "Save like Tzilez! 🎉"
+            val body = "Congratulations! Your deposit of $formattedAmount has been allocated across your categories. Keep stacking and saving like Tzilez!"
+
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification_goal)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            notificationManager?.notify(9999, notification)
+        } catch (_: Throwable) {
+        }
+    }
 }

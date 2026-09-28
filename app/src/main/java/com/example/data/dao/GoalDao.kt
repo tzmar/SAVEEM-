@@ -14,6 +14,9 @@ interface GoalDao {
     @Query("SELECT * FROM goals ORDER BY createdAt ASC")
     fun getAllGoals(): Flow<List<GoalEntity>>
 
+    @Query("SELECT * FROM goals ORDER BY createdAt ASC")
+    suspend fun getAllGoalsList(): List<GoalEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGoal(goal: GoalEntity): Long
 

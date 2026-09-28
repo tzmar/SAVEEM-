@@ -3,7 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/app_icon_allocator_1789401756319"
+        android:drawable="@drawable/pock_em_logo_1790623771713"
         android:gravity="center" />
 </layer-list>
-

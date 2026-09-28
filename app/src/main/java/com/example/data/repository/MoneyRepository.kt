@@ -13,6 +13,8 @@ import com.example.data.model.GoalEntity
 import com.example.data.model.GoalProgress
 import com.example.data.model.OverallStats
 import com.example.data.model.SplitPreview
+import com.example.util.BackupManager
+import com.example.util.BackupSummary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -43,6 +45,10 @@ class MoneyRepository(private val database: AppDatabase) {
 
     val currencySymbol: Flow<String> = settingsDao.getSetting("currency_symbol")
         .map { it?.ifBlank { "P" } ?: "P" }
+        .distinctUntilChanged()
+
+    val roundingCategoryId: Flow<Long?> = settingsDao.getSetting("rounding_category_id")
+        .map { it?.toLongOrNull() }
         .distinctUntilChanged()
 
     suspend fun ensureDefaultDataLoaded() = withContext(Dispatchers.IO) {
@@ -206,35 +212,53 @@ class MoneyRepository(private val database: AppDatabase) {
         )
     }
 
-    fun calculateSplits(amount: Double, categoriesList: List<CategoryEntity>): List<SplitPreview> {
+    fun calculateSplits(
+        amount: Double,
+        categoriesList: List<CategoryEntity>,
+        roundingCategoryId: Long? = null
+    ): List<SplitPreview> {
         if (amount <= 0.0 || categoriesList.isEmpty()) return emptyList()
 
-        val totalCents = (amount * 100.0).roundToLong()
-        var remainingCents = totalCents
-        val previews = mutableListOf<SplitPreview>()
+        val cleanAmount = Math.round(amount * 100.0) / 100.0
+        if (cleanAmount <= 0.0) return emptyList()
 
-        for (i in categoriesList.indices) {
-            val cat = categoriesList[i]
-            val splitCents = if (i == categoriesList.lastIndex) {
-                remainingCents // Absorbs any penny/cent rounding rounding difference
-            } else {
-                val calculated = ((totalCents * cat.percentage) / 100.0).roundToLong()
-                calculated.coerceAtMost(remainingCents)
+        // 1. If user explicitly selected a rounding category, use it
+        // 2. Otherwise default to Personal / Fun
+        // 3. Fallback to the last category
+        val roundingCat = (if (roundingCategoryId != null) {
+            categoriesList.find { it.id == roundingCategoryId }
+        } else null) ?: categoriesList.find {
+            it.name.contains("Personal", ignoreCase = true) ||
+            it.name.contains("Fun", ignoreCase = true)
+        } ?: categoriesList.last()
+
+        val allocations = mutableMapOf<Long, Double>()
+        var sumOthers = 0L
+
+        // Every other category is rounded down (floor) to a whole Pula amount
+        for (cat in categoriesList) {
+            if (cat.id != roundingCat.id) {
+                val raw = (cleanAmount * cat.percentage) / 100.0
+                val floored = Math.floor(raw).toLong().coerceAtLeast(0L)
+                allocations[cat.id] = floored.toDouble()
+                sumOthers += floored
             }
-            remainingCents -= splitCents
-            val splitAmount = splitCents / 100.0
+        }
 
-            previews.add(
-                SplitPreview(
-                    categoryId = cat.id,
-                    categoryName = cat.name,
-                    percentage = cat.percentage,
-                    amount = splitAmount,
-                    colorHex = cat.colorHex
-                )
+        // The chosen category receives all decimal remainders and leftover Pula
+        val roundingCatAmount = Math.round((cleanAmount - sumOthers) * 100.0) / 100.0
+        allocations[roundingCat.id] = roundingCatAmount.coerceAtLeast(0.0)
+
+        return categoriesList.map { cat ->
+            val splitAmount = allocations[cat.id] ?: 0.0
+            SplitPreview(
+                categoryId = cat.id,
+                categoryName = cat.name,
+                percentage = cat.percentage,
+                amount = splitAmount,
+                colorHex = cat.colorHex
             )
         }
-        return previews
     }
 
     suspend fun allocateMoney(
@@ -246,11 +270,13 @@ class MoneyRepository(private val database: AppDatabase) {
             ensureDefaultDataLoaded()
             cats = categoryDao.getCategoriesList()
         }
-        val previews = calculateSplits(amount, cats)
+        val roundingId = settingsDao.getSettingValue("rounding_category_id")?.toLongOrNull()
+        val previews = calculateSplits(amount, cats, roundingId)
+        val cleanAmount = Math.round(amount * 100.0) / 100.0
 
         val allocation = AllocationEntity(
             timestamp = System.currentTimeMillis(),
-            totalAmount = amount,
+            totalAmount = cleanAmount,
             note = note.trim()
         )
         val allocationId = allocationDao.insertAllocation(allocation)
@@ -267,6 +293,10 @@ class MoneyRepository(private val database: AppDatabase) {
         }
         allocationDao.insertSplits(splits)
         Pair(savedAllocation, splits)
+    }
+
+    suspend fun setRoundingCategoryId(id: Long) = withContext(Dispatchers.IO) {
+        settingsDao.setSetting(AppSettingEntity(key = "rounding_category_id", value = id.toString()))
     }
 
     suspend fun recordExpense(
@@ -343,19 +373,53 @@ class MoneyRepository(private val database: AppDatabase) {
         newCat.copy(id = newId)
     }
 
+    fun recalculateRemainingPercentages(categories: List<CategoryEntity>): List<CategoryEntity> {
+        if (categories.isEmpty()) return emptyList()
+        if (categories.size == 1) {
+            return listOf(categories[0].copy(percentage = 100.0, displayOrder = 0))
+        }
+
+        val totalRemaining = categories.sumOf { it.percentage }
+        var sumSoFar = 0.0
+
+        return categories.mapIndexed { index, cat ->
+            val newPct = if (index == categories.lastIndex) {
+                val remaining = 100.0 - sumSoFar
+                Math.round(remaining * 10.0) / 10.0
+            } else {
+                val proportional = if (totalRemaining > 0.0) {
+                    (cat.percentage / totalRemaining) * 100.0
+                } else {
+                    100.0 / categories.size
+                }
+                val rounded = Math.round(proportional * 10.0) / 10.0
+                sumSoFar += rounded
+                rounded
+            }
+            cat.copy(percentage = newPct.coerceAtLeast(0.0), displayOrder = index)
+        }
+    }
+
+    suspend fun getCategoriesList(): List<CategoryEntity> = withContext(Dispatchers.IO) {
+        categoryDao.getCategoriesList()
+    }
+
     suspend fun deleteCategoryById(id: Long) = withContext(Dispatchers.IO) {
         val existing = categoryDao.getCategoriesList().toMutableList()
         val toDelete = existing.find { it.id == id } ?: return@withContext
         if (existing.size <= 1) return@withContext // Do not delete the last category
 
-        existing.remove(toDelete)
-        if (existing.isNotEmpty() && toDelete.percentage > 0.0) {
-            val first = existing[0]
-            val newFirstPct = Math.round((first.percentage + toDelete.percentage) * 10.0) / 10.0
-            existing[0] = first.copy(percentage = newFirstPct)
-            categoryDao.insertCategories(existing)
+        val currentRounding = settingsDao.getSettingValue("rounding_category_id")?.toLongOrNull()
+        if (currentRounding == id) {
+            settingsDao.setSetting(AppSettingEntity(key = "rounding_category_id", value = ""))
         }
+
+        existing.remove(toDelete)
+        val recalculated = recalculateRemainingPercentages(existing)
         categoryDao.deleteCategoryById(id)
+        if (recalculated.isNotEmpty()) {
+            categoryDao.insertCategories(recalculated)
+        }
     }
 
     suspend fun insertCategory(category: CategoryEntity) = withContext(Dispatchers.IO) {
@@ -367,7 +431,7 @@ class MoneyRepository(private val database: AppDatabase) {
     }
 
     suspend fun deleteCategory(category: CategoryEntity) = withContext(Dispatchers.IO) {
-        categoryDao.deleteCategory(category)
+        deleteCategoryById(category.id)
     }
 
     suspend fun addGoal(
@@ -552,5 +616,67 @@ class MoneyRepository(private val database: AppDatabase) {
     suspend fun getSavedForexRate(pairId: String, defaultRate: Double): Double = withContext(Dispatchers.IO) {
         val value = settingsDao.getSettingValue("forex_rate_$pairId")
         value?.toDoubleOrNull() ?: defaultRate
+    }
+
+    // BACKUP & RESTORE
+    suspend fun exportFullBackupJson(): String = withContext(Dispatchers.IO) {
+        val categories = categoryDao.getCategoriesList()
+        val allocations = allocationDao.getAllAllocationsList()
+        val splits = allocationDao.getAllSplitsList()
+        val expenses = expenseDao.getAllExpensesList()
+        val goals = goalDao.getAllGoalsList()
+        val settings = settingsDao.getAllSettingsList()
+        BackupManager.createBackupJson(
+            categories = categories,
+            allocations = allocations,
+            splits = splits,
+            expenses = expenses,
+            goals = goals,
+            settings = settings
+        )
+    }
+
+    suspend fun restoreFullBackupJson(jsonString: String): BackupSummary = withContext(Dispatchers.IO) {
+        val backupData = BackupManager.parseBackupJson(jsonString)
+
+        // Clear existing tables
+        allocationDao.deleteAllSplits()
+        allocationDao.deleteAllAllocations()
+        expenseDao.deleteAllExpenses()
+        goalDao.deleteAllGoals()
+        categoryDao.deleteAllCategories()
+        settingsDao.deleteAllSettings()
+
+        // Insert restored tables
+        if (backupData.categories.isNotEmpty()) {
+            categoryDao.insertCategories(backupData.categories)
+        } else {
+            ensureDefaultDataLoaded()
+        }
+
+        if (backupData.allocations.isNotEmpty()) {
+            allocationDao.insertAllocations(backupData.allocations)
+        }
+        if (backupData.splits.isNotEmpty()) {
+            allocationDao.insertSplits(backupData.splits)
+        }
+        if (backupData.expenses.isNotEmpty()) {
+            expenseDao.insertExpenses(backupData.expenses)
+        }
+        if (backupData.goals.isNotEmpty()) {
+            goalDao.insertGoals(backupData.goals)
+        }
+        if (backupData.settings.isNotEmpty()) {
+            settingsDao.insertSettings(backupData.settings)
+        }
+
+        BackupSummary(
+            categoriesCount = backupData.categories.size,
+            allocationsCount = backupData.allocations.size,
+            splitsCount = backupData.splits.size,
+            expensesCount = backupData.expenses.size,
+            goalsCount = backupData.goals.size,
+            exportedAt = backupData.exportedAt
+        )
     }
 }

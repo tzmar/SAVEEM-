@@ -142,21 +142,28 @@ fun AllocationSuccessDialog(
             }
         },
         title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = mintAccent,
-                    modifier = Modifier.size(26.dp)
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = mintAccent,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = "Save like Tzilez! 🎉",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp,
+                        color = textColorPrimary
+                    )
+                }
                 Text(
-                    text = "Money Allocated!",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 19.sp,
-                    color = textColorPrimary
+                    text = "Deposit successfully allocated across your categories!",
+                    fontSize = 12.sp,
+                    color = textColorSecondary
                 )
             }
         },

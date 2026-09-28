@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,8 +33,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.CurrencyExchange
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
@@ -42,12 +47,14 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -689,6 +696,116 @@ fun AllocationRulesSubPage(
             }
         }
 
+        // Rounding Destination Setting ("Rounding goes to")
+        val roundingCatId by viewModel.roundingCategoryId.collectAsStateWithLifecycle()
+        val effectiveRoundingCat = remember(editableCategories, roundingCatId) {
+            (if (roundingCatId != null) {
+                editableCategories.find { it.id == roundingCatId }
+            } else null) ?: editableCategories.find {
+                it.name.contains("Personal", ignoreCase = true) ||
+                it.name.contains("Fun", ignoreCase = true) ||
+                it.name.contains("Living", ignoreCase = true) ||
+                it.name.contains("Spend", ignoreCase = true)
+            } ?: editableCategories.lastOrNull()
+        }
+
+        LiquidGlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Rounding goes to",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textColorPrimary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Any fractional leftover Pula from rounding is automatically sent to this category so every allocation stays in clean, whole cash.",
+                        fontSize = 12.sp,
+                        color = textColorSecondary
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    editableCategories.forEach { cat ->
+                        val isSelected = cat.id == effectiveRoundingCat?.id
+                        val catColor = parseColorSafe(cat.colorHex)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isSelected) {
+                                        if (isDark) Color(0x3010B981) else Color(0x180D9488)
+                                    } else {
+                                        if (isDark) Color(0x0CFFFFFF) else Color(0x08000000)
+                                    }
+                                )
+                                .border(
+                                    1.dp,
+                                    if (isSelected) {
+                                        if (isDark) LiquidMint else Color(0xFF0D9488)
+                                    } else {
+                                        Color.Transparent
+                                    },
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .clickable {
+                                    viewModel.setRoundingCategory(cat.id)
+                                }
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(catColor)
+                                )
+                                Text(
+                                    text = cat.name,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = textColorPrimary
+                                )
+                            }
+
+                            if (isSelected) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "Receives leftover",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isDark) LiquidMint else Color(0xFF0D9488)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = if (isDark) LiquidMint else Color(0xFF0D9488),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Save Rules Button
         LiquidGlassButton(
             onClick = { viewModel.saveCategoryPercentages() },
@@ -973,6 +1090,7 @@ fun CategoriesSubPage(
 
     // 3. Delete Category Confirmation Dialog
     categoryToDelete?.let { cat ->
+        val pctDisplay = if (cat.percentage % 1.0 == 0.0) cat.percentage.toInt().toString() else cat.percentage.toString()
         AlertDialog(
             onDismissRequest = { categoryToDelete = null },
             containerColor = if (isDark) Color(0xFF1E2632) else Color.White,
@@ -980,7 +1098,7 @@ fun CategoriesSubPage(
             title = { Text("Delete ${cat.name}?", fontWeight = FontWeight.Bold, color = textColorPrimary) },
             text = {
                 Text(
-                    text = "Are you sure you want to delete this category? Its allocation percentage (${cat.percentage.toInt()}%) will be returned to your remaining categories.",
+                    text = "Are you sure you want to delete this category? Its allocation percentage ($pctDisplay%) will be redistributed proportionally across your remaining categories so they total 100%.",
                     color = textColorSecondary,
                     fontSize = 13.sp
                 )
@@ -1079,8 +1197,9 @@ fun CategoriesSubPage(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
+                            val catPctDisplay = if (cat.percentage % 1.0 == 0.0) "${cat.percentage.toInt()}%" else "${cat.percentage}%"
                             LiquidGlassPill(
-                                text = "${cat.percentage.toInt()}%",
+                                text = catPctDisplay,
                                 color = catColor
                             )
 
@@ -1401,7 +1520,7 @@ fun CurrencySubPage(
 }
 
 /**
- * 5. Backup & Export SubPage
+ * 5. Backup & Restore SubPage
  */
 @Composable
 fun BackupExportSubPage(
@@ -1421,6 +1540,150 @@ fun BackupExportSubPage(
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
     val currency by viewModel.currencySymbol.collectAsStateWithLifecycle()
 
+    var showPasteDialog by remember { mutableStateOf(false) }
+    var pasteJsonText by remember { mutableStateOf("") }
+    var pendingRestoreJson by remember { mutableStateOf<String?>(null) }
+    var restoreFeedback by remember { mutableStateOf<String?>(null) }
+    var isErrorFeedback by remember { mutableStateOf(false) }
+
+    // File picker launcher for restoring JSON backup
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            try {
+                val inputStream = context.contentResolver.openInputStream(it)
+                val json = inputStream?.bufferedReader()?.use { reader -> reader.readText() }
+                if (!json.isNullOrBlank()) {
+                    pendingRestoreJson = json
+                } else {
+                    restoreFeedback = "The selected file is empty."
+                    isErrorFeedback = true
+                }
+            } catch (e: Exception) {
+                restoreFeedback = "Failed to read file: ${e.message}"
+                isErrorFeedback = true
+            }
+        }
+    }
+
+    // Confirmation Dialog before overwriting data
+    pendingRestoreJson?.let { jsonToRestore ->
+        AlertDialog(
+            onDismissRequest = { pendingRestoreJson = null },
+            containerColor = if (isDark) Color(0xFF1E2632) else Color.White,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Restore,
+                        contentDescription = null,
+                        tint = if (isDark) LiquidMint else Color(0xFF0D9488)
+                    )
+                    Text("Confirm Restore?", fontWeight = FontWeight.Bold, color = textColorPrimary)
+                }
+            },
+            text = {
+                Text(
+                    text = "Restoring this backup will replace your current categories, allocations, expenses, goals, and settings with the data in the backup file.\n\nDo you want to proceed?",
+                    color = textColorSecondary,
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val backupStr = jsonToRestore
+                        pendingRestoreJson = null
+                        viewModel.restoreBackup(
+                            jsonString = backupStr,
+                            onSuccess = { summary ->
+                                restoreFeedback = "Restored successfully: ${summary.categoriesCount} categories, ${summary.allocationsCount} allocations, ${summary.goalsCount} goals!"
+                                isErrorFeedback = false
+                                Toast.makeText(context, "Backup restored successfully!", Toast.LENGTH_LONG).show()
+                            },
+                            onError = { err ->
+                                restoreFeedback = "Restore failed: $err"
+                                isErrorFeedback = true
+                                Toast.makeText(context, "Restore failed: $err", Toast.LENGTH_LONG).show()
+                            }
+                        )
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isDark) LiquidTeal else Color(0xFF0D9488)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Yes, Restore Data", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRestoreJson = null }) {
+                    Text("Cancel", color = textColorSecondary)
+                }
+            }
+        )
+    }
+
+    // Dialog for pasting backup JSON directly
+    if (showPasteDialog) {
+        AlertDialog(
+            onDismissRequest = { showPasteDialog = false },
+            containerColor = if (isDark) Color(0xFF1E2632) else Color.White,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text("Paste Backup JSON", fontWeight = FontWeight.Bold, color = textColorPrimary)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Paste the complete JSON backup string below to restore your Pock-Em records:",
+                        color = textColorSecondary,
+                        fontSize = 12.sp
+                    )
+                    OutlinedTextField(
+                        value = pasteJsonText,
+                        onValueChange = { pasteJsonText = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        placeholder = { Text("{\n  \"version\": 1,\n  \"appName\": \"Pock-Em\"...\n}", fontSize = 12.sp, color = textColorSecondary.copy(alpha = 0.5f)) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = textColorPrimary,
+                            unfocusedTextColor = textColorPrimary,
+                            focusedBorderColor = if (isDark) LiquidMint else Color(0xFF0D9488),
+                            unfocusedBorderColor = if (isDark) Color(0x30FFFFFF) else Color(0x30000000)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val text = pasteJsonText.trim()
+                        if (text.isNotBlank()) {
+                            showPasteDialog = false
+                            pasteJsonText = ""
+                            pendingRestoreJson = text
+                        }
+                    },
+                    enabled = pasteJsonText.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isDark) LiquidTeal else Color(0xFF0D9488)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Preview Restore", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPasteDialog = false }) {
+                    Text("Cancel", color = textColorSecondary)
+                }
+            }
+        )
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -1429,10 +1692,51 @@ fun BackupExportSubPage(
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         SubPageTopBar(
-            title = "Backup & Export",
-            subtitle = "Safeguard & download your records",
+            title = "Backup & Restore",
+            subtitle = "Safeguard, export & restore your records",
             onBack = onBack
         )
+
+        // Feedback Banner
+        restoreFeedback?.let { msg ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        if (isErrorFeedback) {
+                            if (isDark) Color(0x25EF4444) else Color(0x15DC2626)
+                        } else {
+                            if (isDark) Color(0x2510B981) else Color(0x180D9488)
+                        }
+                    )
+                    .border(
+                        1.dp,
+                        if (isErrorFeedback) LiquidRose else (if (isDark) LiquidMint else Color(0xFF0D9488)),
+                        RoundedCornerShape(14.dp)
+                    )
+                    .padding(14.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isErrorFeedback) Icons.Default.Warning else Icons.Default.Check,
+                        contentDescription = null,
+                        tint = if (isErrorFeedback) LiquidRose else (if (isDark) LiquidMint else Color(0xFF0D9488)),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = msg,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = textColorPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
 
         // Summary Card
         LiquidGlassCard(
@@ -1470,7 +1774,113 @@ fun BackupExportSubPage(
             }
         }
 
-        // Export Actions
+        // 1. Full Database Backup & Restore (JSON)
+        LiquidGlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Database Backup & Restore",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textColorPrimary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Backup your entire database including categories, allocations, percentage rules, expenses, and goals into a JSON file, or restore from one.",
+                        fontSize = 12.sp,
+                        color = textColorSecondary
+                    )
+                }
+
+                // Export Full Backup Button
+                Button(
+                    onClick = {
+                        viewModel.exportBackup { json ->
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TITLE, "pock_em_backup.json")
+                                putExtra(Intent.EXTRA_TEXT, json)
+                                type = "application/json"
+                            }
+                            context.startActivity(Intent.createChooser(sendIntent, "Share Pock-Em Backup"))
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isDark) LiquidTeal else Color(0xFF0D9488)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Backup, contentDescription = null, tint = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Share Backup File (JSON)", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+
+                // Copy Full Backup JSON to Clipboard
+                OutlinedButton(
+                    onClick = {
+                        viewModel.exportBackup { json ->
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("Pock-Em Backup", json))
+                            Toast.makeText(context, "Full Backup copied to clipboard!", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Copy Full Backup to Clipboard")
+                }
+
+                HorizontalDivider(
+                    color = if (isDark) Color(0x20FFFFFF) else Color(0x18000000),
+                    thickness = 0.8.dp
+                )
+
+                // Restore Options Header
+                Text(
+                    text = "Restore Options",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = textColorPrimary
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Restore from File
+                    Button(
+                        onClick = { filePickerLauncher.launch("*/*") },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = LiquidIndigo),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.UploadFile, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Pick File", color = Color.White, fontSize = 13.sp)
+                    }
+
+                    // Paste JSON
+                    OutlinedButton(
+                        onClick = { showPasteDialog = true },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Paste JSON", fontSize = 13.sp)
+                    }
+                }
+            }
+        }
+
+        // 2. Export CSV & Reports
         LiquidGlassCard(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(18.dp)
@@ -1480,7 +1890,7 @@ fun BackupExportSubPage(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text(
-                    text = "Export Options",
+                    text = "Spreadsheet & Report Export",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = textColorPrimary
@@ -1499,8 +1909,8 @@ fun BackupExportSubPage(
                             }
                         }
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("SAVEEM Export", csv))
-                        Toast.makeText(context, "Export copied to clipboard!", Toast.LENGTH_SHORT).show()
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Pock-Em Export", csv))
+                        Toast.makeText(context, "CSV copied to clipboard!", Toast.LENGTH_SHORT).show()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -1513,16 +1923,16 @@ fun BackupExportSubPage(
                 // Share Summary Text
                 Button(
                     onClick = {
-                        val summaryText = "SAVEEM Financial Summary:\nTotal Received: $currency${stats.totalReceived}\nTotal Allocated: $currency${stats.totalAllocated}\nTotal Spent: $currency${stats.totalSpent}"
+                        val summaryText = "Pock-Em Financial Summary:\nTotal Received: $currency${stats.totalReceived}\nTotal Allocated: $currency${stats.totalAllocated}\nTotal Spent: $currency${stats.totalSpent}"
                         val sendIntent = Intent().apply {
                             action = Intent.ACTION_SEND
                             putExtra(Intent.EXTRA_TEXT, summaryText)
                             type = "text/plain"
                         }
-                        context.startActivity(Intent.createChooser(sendIntent, "Share SAVEEM Summary"))
+                        context.startActivity(Intent.createChooser(sendIntent, "Share Pock-Em Summary"))
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = LiquidIndigo),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isDark) Color(0xFF334155) else Color(0xFF64748B)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(imageVector = Icons.Default.Share, contentDescription = null, tint = Color.White)

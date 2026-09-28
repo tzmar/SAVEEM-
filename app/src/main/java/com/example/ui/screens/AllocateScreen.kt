@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
@@ -89,6 +90,7 @@ fun AllocateScreen(
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val successEvent by viewModel.allocationSuccessEvent.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
     val numericAmount = amountInput.toDoubleOrNull() ?: 0.0
     val isReadyToAllocate = numericAmount > 0.0
@@ -536,7 +538,7 @@ fun AllocateScreen(
         LiquidGlassButton(
             onClick = {
                 focusManager.clearFocus()
-                viewModel.allocateMoney()
+                viewModel.allocateMoney(context)
             },
             enabled = isReadyToAllocate,
             modifier = Modifier
@@ -638,8 +640,9 @@ fun CategorySplitRow(
                         fontWeight = FontWeight.Bold,
                         color = textColorPrimary
                     )
+                    val pctDisplay = if (percentage % 1.0 == 0.0) "${percentage.toInt()}%" else "${percentage}%"
                     Text(
-                        text = "${percentage.toInt()}% of income",
+                        text = "$pctDisplay of income",
                         fontSize = 11.sp,
                         color = textColorSecondary
                     )

@@ -147,7 +147,7 @@ fun DashboardScreen(
                             .background(LiquidMint)
                     )
                     Text(
-                        text = "SAVEEM",
+                        text = "POCK-EM",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 1.4.sp,
@@ -667,8 +667,9 @@ fun CategoryBalanceCard(
                     )
                 }
 
+                val pctDisplay = if (category.percentage % 1.0 == 0.0) "${category.percentage.toInt()}%" else "${category.percentage}%"
                 LiquidGlassPill(
-                    text = "${category.percentage.toInt()}%",
+                    text = pctDisplay,
                     color = catColor
                 )
             }
