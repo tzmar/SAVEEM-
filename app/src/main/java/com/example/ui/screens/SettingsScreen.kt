@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CurrencyExchange
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.LightMode
@@ -724,11 +725,26 @@ fun CategoriesSubPage(
 
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
+    var categoryToEdit by remember { mutableStateOf<CategoryEntity?>(null) }
+    var categoryToDelete by remember { mutableStateOf<CategoryEntity?>(null) }
 
     var newCatName by remember { mutableStateOf("") }
     var newCatPercentage by remember { mutableStateOf("") }
     var newCatDesc by remember { mutableStateOf("") }
+    var newCatColorHex by remember { mutableStateOf("#06B6D4") }
 
+    val paletteColors = listOf(
+        "#10B981", // Emerald
+        "#06B6D4", // Cyan
+        "#0D9488", // Teal
+        "#6366F1", // Indigo
+        "#8B5CF6", // Purple
+        "#F43F5E", // Rose
+        "#F59E0B", // Amber
+        "#EC4899"  // Pink
+    )
+
+    // 1. Add Category Dialog
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
@@ -747,22 +763,27 @@ fun CategoriesSubPage(
                         value = newCatName,
                         onValueChange = { newCatName = it },
                         label = { Text("Category Name") },
-                        placeholder = { Text("e.g. Travel, Taxes") },
+                        placeholder = { Text("e.g. Travel, Investments") },
                         singleLine = true,
                         colors = fieldColors,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("new_category_name_input")
                     )
                     OutlinedTextField(
                         value = newCatPercentage,
                         onValueChange = { newCatPercentage = it },
-                        label = { Text("Percentage (%)") },
-                        placeholder = { Text("e.g. 15") },
+                        label = { Text("Allocation Percentage (%)") },
+                        placeholder = { Text("e.g. 10 (or 0)") },
+                        suffix = { Text("%", fontWeight = FontWeight.Bold, color = textColorPrimary) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
                         colors = fieldColors,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("new_category_percentage_input")
                     )
                     OutlinedTextField(
                         value = newCatDesc,
@@ -772,36 +793,212 @@ fun CategoriesSubPage(
                         singleLine = true,
                         colors = fieldColors,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("new_category_desc_input")
                     )
+
+                    Text(
+                        text = "Accent Color:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = textColorSecondary
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        paletteColors.forEach { hex ->
+                            val color = parseColorSafe(hex)
+                            val isSelected = hex.equals(newCatColorHex, ignoreCase = true)
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                                    .border(
+                                        if (isSelected) 2.5.dp else 1.dp,
+                                        if (isSelected) (if (isDark) Color.White else Color(0xFF0F172A)) else Color.Transparent,
+                                        CircleShape
+                                    )
+                                    .clickable { newCatColorHex = hex }
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val pct = newCatPercentage.toDoubleOrNull() ?: 0.0
-                        if (newCatName.isNotBlank() && pct > 0) {
-                            viewModel.addEditableCategory(
+                        if (newCatName.isNotBlank()) {
+                            val pct = newCatPercentage.toDoubleOrNull() ?: 0.0
+                            viewModel.addNewCategory(
                                 name = newCatName.trim(),
                                 percentage = pct,
                                 description = newCatDesc.trim(),
-                                colorHex = "#06B6D4"
+                                colorHex = newCatColorHex
                             )
-                            viewModel.saveCategoryPercentages()
                             showAddDialog = false
                             newCatName = ""
                             newCatPercentage = ""
                             newCatDesc = ""
+                            newCatColorHex = "#06B6D4"
                         }
                     },
+                    enabled = newCatName.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = if (isDark) LiquidTeal else Color(0xFF0D9488)),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.testTag("confirm_add_category_button")
                 ) {
-                    Text("Add", color = Color.White)
+                    Text("Add Category", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddDialog = false }) {
+                    Text("Cancel", color = textColorSecondary)
+                }
+            }
+        )
+    }
+
+    // 2. Edit Category Dialog
+    categoryToEdit?.let { cat ->
+        var editName by remember(cat) { mutableStateOf(cat.name) }
+        var editPercentage by remember(cat) { mutableStateOf(if (cat.percentage % 1.0 == 0.0) cat.percentage.toInt().toString() else cat.percentage.toString()) }
+        var editDesc by remember(cat) { mutableStateOf(cat.description) }
+        var editColorHex by remember(cat) { mutableStateOf(cat.colorHex) }
+
+        AlertDialog(
+            onDismissRequest = { categoryToEdit = null },
+            containerColor = if (isDark) Color(0xFF1E2632) else Color.White,
+            shape = RoundedCornerShape(20.dp),
+            title = { Text("Edit Category", fontWeight = FontWeight.Bold, color = textColorPrimary) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val fieldColors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = textColorPrimary,
+                        unfocusedTextColor = textColorPrimary,
+                        focusedBorderColor = if (isDark) LiquidMint else Color(0xFF0D9488),
+                        unfocusedBorderColor = if (isDark) Color(0x30FFFFFF) else Color(0x30000000)
+                    )
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Category Name") },
+                        singleLine = true,
+                        colors = fieldColors,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = editPercentage,
+                        onValueChange = { editPercentage = it },
+                        label = { Text("Percentage (%)") },
+                        suffix = { Text("%", fontWeight = FontWeight.Bold, color = textColorPrimary) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        colors = fieldColors,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = editDesc,
+                        onValueChange = { editDesc = it },
+                        label = { Text("Purpose / Description") },
+                        singleLine = true,
+                        colors = fieldColors,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Text(
+                        text = "Accent Color:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = textColorSecondary
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        paletteColors.forEach { hex ->
+                            val color = parseColorSafe(hex)
+                            val isSelected = hex.equals(editColorHex, ignoreCase = true)
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                                    .border(
+                                        if (isSelected) 2.5.dp else 1.dp,
+                                        if (isSelected) (if (isDark) Color.White else Color(0xFF0F172A)) else Color.Transparent,
+                                        CircleShape
+                                    )
+                                    .clickable { editColorHex = hex }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (editName.isNotBlank()) {
+                            val pct = editPercentage.toDoubleOrNull() ?: cat.percentage
+                            viewModel.updateCategory(
+                                cat.copy(
+                                    name = editName.trim(),
+                                    percentage = pct,
+                                    description = editDesc.trim(),
+                                    colorHex = editColorHex
+                                )
+                            )
+                            categoryToEdit = null
+                        }
+                    },
+                    enabled = editName.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isDark) LiquidTeal else Color(0xFF0D9488)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Save Changes", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { categoryToEdit = null }) {
+                    Text("Cancel", color = textColorSecondary)
+                }
+            }
+        )
+    }
+
+    // 3. Delete Category Confirmation Dialog
+    categoryToDelete?.let { cat ->
+        AlertDialog(
+            onDismissRequest = { categoryToDelete = null },
+            containerColor = if (isDark) Color(0xFF1E2632) else Color.White,
+            shape = RoundedCornerShape(20.dp),
+            title = { Text("Delete ${cat.name}?", fontWeight = FontWeight.Bold, color = textColorPrimary) },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete this category? Its allocation percentage (${cat.percentage.toInt()}%) will be returned to your remaining categories.",
+                    color = textColorSecondary,
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteCategory(cat.id)
+                        categoryToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = if (isDark) LiquidRose else Color(0xFFDC2626)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Delete", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { categoryToDelete = null }) {
                     Text("Cancel", color = textColorSecondary)
                 }
             }
@@ -846,7 +1043,7 @@ fun CategoriesSubPage(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -868,18 +1065,51 @@ fun CategoriesSubPage(
                                     fontWeight = FontWeight.SemiBold,
                                     color = textColorPrimary
                                 )
-                                Text(
-                                    text = cat.description,
-                                    fontSize = 12.sp,
-                                    color = textColorSecondary
-                                )
+                                if (cat.description.isNotBlank()) {
+                                    Text(
+                                        text = cat.description,
+                                        fontSize = 12.sp,
+                                        color = textColorSecondary
+                                    )
+                                }
                             }
                         }
 
-                        LiquidGlassPill(
-                            text = "${cat.percentage.toInt()}%",
-                            color = catColor
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            LiquidGlassPill(
+                                text = "${cat.percentage.toInt()}%",
+                                color = catColor
+                            )
+
+                            IconButton(
+                                onClick = { categoryToEdit = cat },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit Category",
+                                    tint = textColorSecondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+
+                            if (categories.size > 1) {
+                                IconButton(
+                                    onClick = { categoryToDelete = cat },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete Category",
+                                        tint = if (isDark) LiquidRose else Color(0xFFE11D48),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -296,9 +296,66 @@ class MoneyRepository(private val database: AppDatabase) {
     }
 
     suspend fun updateCategories(newCategories: List<CategoryEntity>) = withContext(Dispatchers.IO) {
-        // Enforce 100% total
-        categoryDao.deleteAllCategories()
+        val existing = categoryDao.getCategoriesList()
+        val newIds = newCategories.map { it.id }.toSet()
+        existing.filter { it.id !in newIds && it.id > 0 }.forEach {
+            categoryDao.deleteCategory(it)
+        }
         categoryDao.insertCategories(newCategories)
+    }
+
+    suspend fun addNewCategory(
+        name: String,
+        percentage: Double,
+        description: String,
+        colorHex: String
+    ): CategoryEntity = withContext(Dispatchers.IO) {
+        val existing = categoryDao.getCategoriesList().toMutableList()
+        val requestedPct = percentage.coerceIn(0.0, 90.0)
+
+        // If the user specified a positive percentage, adjust existing categories proportionally so sum = 100%
+        if (requestedPct > 0.0 && existing.isNotEmpty()) {
+            val totalExisting = existing.sumOf { it.percentage }
+            val factor = if (totalExisting > 0.0) (100.0 - requestedPct) / totalExisting else 1.0
+            var sumSoFar = 0.0
+            val adjusted = existing.mapIndexed { index, cat ->
+                val newPct = if (index == existing.lastIndex) {
+                    val remaining = 100.0 - requestedPct - sumSoFar
+                    Math.round(remaining * 10.0) / 10.0
+                } else {
+                    val p = Math.round(cat.percentage * factor * 10.0) / 10.0
+                    sumSoFar += p
+                    p
+                }
+                cat.copy(percentage = newPct.coerceAtLeast(0.0))
+            }
+            categoryDao.insertCategories(adjusted)
+        }
+
+        val newCat = CategoryEntity(
+            name = name.trim().ifBlank { "New Category" },
+            percentage = requestedPct,
+            description = description.trim(),
+            colorHex = colorHex.ifBlank { "#06B6D4" },
+            displayOrder = existing.size
+        )
+        val newId = categoryDao.insertCategory(newCat)
+        newCat.copy(id = newId)
+    }
+
+    suspend fun deleteCategoryById(id: Long) = withContext(Dispatchers.IO) {
+        val existing = categoryDao.getCategoriesList().toMutableList()
+        val toDelete = existing.find { it.id == id } ?: return@withContext
+        if (existing.size <= 1) return@withContext // Do not delete the last category
+
+        existing.remove(toDelete)
+        if (existing.isNotEmpty() && toDelete.percentage > 0.0) {
+            val first = existing[0]
+            val newFirstPct = Math.round((first.percentage + toDelete.percentage) * 10.0) / 10.0
+            existing[0] = first.copy(percentage = newFirstPct)
+            categoryDao.insertCategories(existing)
+        }
+        categoryDao.deleteCategoryById(id)
     }
 
     suspend fun insertCategory(category: CategoryEntity) = withContext(Dispatchers.IO) {

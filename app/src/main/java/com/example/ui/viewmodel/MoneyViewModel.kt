@@ -46,34 +46,6 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
     // Set of notified goal milestone keys formatted as "${goalId}_${milestonePercent}"
     private val notifiedMilestones = mutableSetOf<String>()
 
-    init {
-        viewModelScope.launch {
-            repository.ensureDefaultDataLoaded()
-        }
-    }
-
-    fun checkAndTriggerGoalMilestones(context: Context, goals: List<GoalProgress>, currency: String) {
-        val milestones = listOf(50, 75, 100)
-        for (goal in goals) {
-            val progressPercent = (goal.percentageComplete * 100).toInt()
-            for (milestone in milestones) {
-                val key = "${goal.id}_$milestone"
-                if (progressPercent >= milestone && !notifiedMilestones.contains(key)) {
-                    notifiedMilestones.add(key)
-                    GoalNotificationHelper.showMilestoneNotification(
-                        context = context,
-                        goalId = goal.id,
-                        goalTitle = goal.title,
-                        milestonePercent = milestone,
-                        currentAmount = goal.currentAmount,
-                        targetAmount = goal.targetAmount,
-                        currencySymbol = currency
-                    )
-                }
-            }
-        }
-    }
-
     val currencySymbol: StateFlow<String> = repository.currencySymbol
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "P")
 
@@ -151,6 +123,41 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
 
     private val _settingsFeedbackMessage = MutableStateFlow<String?>(null)
     val settingsFeedbackMessage: StateFlow<String?> = _settingsFeedbackMessage.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            repository.ensureDefaultDataLoaded()
+        }
+        viewModelScope.launch {
+            categories.collect { cats ->
+                if (_editableCategories.value.isEmpty() && cats.isNotEmpty()) {
+                    _editableCategories.value = cats.map { it.copy() }
+                }
+            }
+        }
+    }
+
+    fun checkAndTriggerGoalMilestones(context: Context, goals: List<GoalProgress>, currency: String) {
+        val milestones = listOf(50, 75, 100)
+        for (goal in goals) {
+            val progressPercent = (goal.percentageComplete * 100).toInt()
+            for (milestone in milestones) {
+                val key = "${goal.id}_$milestone"
+                if (progressPercent >= milestone && !notifiedMilestones.contains(key)) {
+                    notifiedMilestones.add(key)
+                    GoalNotificationHelper.showMilestoneNotification(
+                        context = context,
+                        goalId = goal.id,
+                        goalTitle = goal.title,
+                        milestonePercent = milestone,
+                        currentAmount = goal.currentAmount,
+                        targetAmount = goal.targetAmount,
+                        currencySymbol = currency
+                    )
+                }
+            }
+        }
+    }
 
     fun onAmountChanged(newInput: String) {
         // Allow only digits and at most one decimal point
@@ -285,6 +292,37 @@ class MoneyViewModel(private val repository: MoneyRepository) : ViewModel() {
     fun loadEditableCategories() {
         _editableCategories.value = categories.value.map { it.copy() }
         _settingsFeedbackMessage.value = null
+    }
+
+    fun addNewCategory(
+        name: String,
+        percentage: Double,
+        description: String,
+        colorHex: String = "#06B6D4"
+    ) {
+        viewModelScope.launch {
+            repository.addNewCategory(
+                name = name,
+                percentage = percentage,
+                description = description,
+                colorHex = colorHex
+            )
+            loadEditableCategories()
+        }
+    }
+
+    fun updateCategory(category: CategoryEntity) {
+        viewModelScope.launch {
+            repository.updateCategory(category)
+            loadEditableCategories()
+        }
+    }
+
+    fun deleteCategory(categoryId: Long) {
+        viewModelScope.launch {
+            repository.deleteCategoryById(categoryId)
+            loadEditableCategories()
+        }
     }
 
     fun updateEditableCategory(index: Int, name: String, percentage: Double, description: String) {
